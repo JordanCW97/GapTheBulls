@@ -584,19 +584,19 @@
 
     function updateGameDimensions() {
         if (isMobilePortrait) {
-            player.width = Math.min(50, displayWidth * 0.09); 
-            player.height = Math.min(25, displayHeight * 0.035);
-            player.x = displayWidth * 0.15; 
+            player.width = 44;
+            player.height = 22;
+            player.x = displayWidth * 0.1;
 
-            warningZone = displayWidth * 0.6; 
-            perfectJumpZone = displayWidth * 0.4; 
+            warningZone = displayWidth * 0.75;
+            perfectJumpZone = displayWidth * 0.5;
 
             obstacleSpeed = Math.max(600, obstacleSpeed * 0.8);
             obstacleSpawnRate = Math.max(2000, obstacleSpawnRate * 1.2);
         } else {
-            player.width = Math.min(80, displayWidth * 0.1);
-            player.height = Math.min(40, displayHeight * 0.067);
-            player.x = displayWidth * 0.125;
+            player.width = 50;
+            player.height = 26;
+            player.x = displayWidth * 0.1;
 
             warningZone = displayWidth * 0.4;
             perfectJumpZone = displayWidth * 0.25;
@@ -607,10 +607,9 @@
         maxCar.x = displayWidth * 0.225;
 
         groundY = displayHeight - Math.min(100, displayHeight * 0.167);
-        minObstacleGap = Math.max(120, displayWidth * 0.18); 
+        minObstacleGap = Math.max(isMobilePortrait ? 140 : 120, displayWidth * 0.15);
 
-        if (!player.grounded) {
-        } else {
+        if (player.grounded) {
             player.y = groundY - player.height;
         }
         maxCar.y = groundY - maxCar.height;
