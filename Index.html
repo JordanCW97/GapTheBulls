@@ -91,7 +91,7 @@
         }
 
         #instructions {
-            bottom: 20px;
+            top: 60px;
             right: 20px;
             font-size: 14px;
             text-align: right;
@@ -146,6 +146,20 @@
         #howToPlay, #credits {
             display: none;
             flex-direction: column;
+            max-width: 90vw;
+            width: 800px;
+            max-height: 95vh; /* Limit modal height to 80% of viewport */
+            overflow-y: auto;  /* Enable vertical scroll if content exceeds height */
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+            #howToPlay, #credits {
+                width: 90vw;
+                max-height: 85vh;
+                padding: 20px;
+                overflow-y: auto;
+            }
         }
 
         .menu-center {
@@ -280,7 +294,7 @@
 
             #instructions {
                 font-size: 12px;
-                bottom: 15px;
+                top: 50px;
             }
 
             #gameOver h2 {
@@ -342,8 +356,6 @@
     <div id="speedIndicator" class="ui">Speed: 0 km/h</div>
     <div id="instructions" class="ui">
         Hold to Jump Higher<br>
-        Red = incoming obstacles!<br>
-        Yellow = perfect jump zone!
     </div>
 
     <div id="introText" class="ui">
@@ -751,33 +763,6 @@
     }
 
     function drawRedBull(x, y, width, height, showWarning = false, showPerfectZone = false) {
-        // Warning indicator for mobile
-        if (isMobilePortrait && showWarning) {
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-            ctx.fillRect(x - 10, 0, width + 20, displayHeight);
-
-            // Flashing warning text
-            if (Math.floor(gameTime / 200) % 2 === 0) {
-                ctx.fillStyle = '#ff0000';
-                ctx.font = `${Math.min(16, displayHeight * 0.025)}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText('INCOMING!', x + width/2, 30);
-                ctx.textAlign = 'left';
-            }
-        }
-
-        // Perfect jump zone indicator
-        if (isMobilePortrait && showPerfectZone) {
-            ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
-            ctx.fillRect(x - 5, groundY - height - 60, width + 10, 60);
-
-            ctx.fillStyle = '#ffff00';
-            ctx.font = `${Math.min(14, displayHeight * 0.02)}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.fillText('JUMP NOW!', x + width/2, groundY - height - 45);
-            ctx.textAlign = 'left';
-        }
-
         // Draw the car
         if (redBullImageLoaded && redBullImage.complete) {
             const spriteAspectRatio = redBullImage.width / redBullImage.height;
@@ -897,25 +882,29 @@
 
     function drawTrees(deltaTime) {
         if (treeImageLoaded && treeImage.complete) {
-            const treeSpacing = Math.max(200, displayWidth * 0.25);
+            const treeSpacing = Math.max(60, displayWidth * 0.02);
             const scrollSpeed = Math.max(300, displayWidth * 0.375);
 
             backgroundOffset += scrollSpeed * (deltaTime / 1000);
             const startX = -(backgroundOffset % treeSpacing);
 
-            for (let i = startX - treeSpacing; i < displayWidth + treeSpacing; i += treeSpacing) {
+            for (let i = startX - treeSpacing * 2; i < displayWidth + treeSpacing * 4; i += treeSpacing) {
                 const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
-                const treeScale = 0.4 + (Math.sin(treeSeed) * 0.2);
-                const baseTreeSize = Math.min(120, displayHeight * 0.2);
+
+                // More variation, slightly smaller overall scale
+                const rand = Math.abs(Math.sin(treeSeed * 87.42)) % 1;
+                const treeScale = 0.9 + rand * 1.4; // Range: 0.9 to 2.3
+
+                const baseTreeSize = Math.min(200, displayHeight * 3.5); // Slightly smaller base
                 const treeWidth = baseTreeSize * treeScale;
                 const treeHeight = baseTreeSize * treeScale;
                 const treeY = groundY - treeHeight;
 
-                ctx.drawImage(treeImage, i - treeWidth/2, treeY, treeWidth, treeHeight);
+                ctx.drawImage(treeImage, i - treeWidth / 2, treeY, treeWidth, treeHeight);
             }
         }
     }
-
+    
     function drawBackground(deltaTime) {
         const gradient = ctx.createLinearGradient(0, 0, 0, displayHeight);
         gradient.addColorStop(0, '#87CEEB');
@@ -1106,8 +1095,13 @@
 
         if (gameState === 'playing') {
             for (let obstacle of obstacles) {
-                const showWarning = isMobilePortrait && obstacle.x > displayWidth - warningZone && obstacle.x < displayWidth;
-                const showPerfectZone = isMobilePortrait && obstacle.x > displayWidth - perfectJumpZone && obstacle.x < displayWidth - perfectJumpZone + 50;
+                // More precise warning zone detection to prevent off-screen drawing
+                const obstacleInView = obstacle.x + obstacle.width > 0 && obstacle.x < displayWidth;
+                const showWarning = isMobilePortrait && obstacleInView &&
+                    obstacle.x > displayWidth - warningZone && obstacle.x < displayWidth;
+                const showPerfectZone = isMobilePortrait && obstacleInView &&
+                    obstacle.x > displayWidth - perfectJumpZone &&
+                    obstacle.x < displayWidth - perfectJumpZone + 50;
 
                 drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height, showWarning, showPerfectZone);
             }
