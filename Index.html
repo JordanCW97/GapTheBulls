@@ -947,13 +947,13 @@
     }
 
     function spawnObstacle(x) {
-        const obstacleHeight = isMobilePortrait ? 32 : 35;
+        const obstacleHeight = isMobilePortrait ? 26 : 30; 
         const obstacleY = groundY - obstacleHeight;
 
         obstacles.push({
             x: x,
             y: obstacleY,
-            width: isMobilePortrait ? 65 : 70,
+            width: isMobilePortrait ? 52 : 60, 
             height: obstacleHeight
         });
     }
