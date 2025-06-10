@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>McLaren vs Red Bull Runner</title>
+    <title>Gap The Bulls!</title>
     <style>
         body {
             margin: 0;
@@ -52,6 +52,13 @@
             font-size: 24px;
         }
 
+        #speedIndicator {
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+            text-align: right;
+        }
+
         #audioToggle {
             position: absolute;
             top: 20px;
@@ -84,9 +91,9 @@
         }
 
         #instructions {
-            top: 20px;
+            bottom: 20px;
             right: 20px;
-            font-size: 16px;
+            font-size: 14px;
             text-align: right;
         }
 
@@ -251,7 +258,8 @@
             to { right: 100%; }
         }
 
-        @media (max-width: 768px) {
+        /* Mobile Portrait Optimizations */
+        @media (max-width: 768px) and (orientation: portrait) {
             #gameContainer {
                 border: none;
                 max-width: none;
@@ -259,8 +267,20 @@
                 border-radius: 0;
             }
 
-            #score, #instructions {
-                font-size: 18px;
+            #score {
+                font-size: 16px;
+                left: 65px;
+                top: 15px;
+            }
+
+            #speedIndicator {
+                font-size: 14px;
+                top: 15px;
+            }
+
+            #instructions {
+                font-size: 12px;
+                bottom: 15px;
             }
 
             #gameOver h2 {
@@ -276,11 +296,8 @@
                 width: 35px;
                 height: 35px;
                 font-size: 18px;
-            }
-
-            #score {
-                left: 65px;
-                font-size: 20px;
+                top: 15px;
+                left: 15px;
             }
 
             .menu-title {
@@ -322,10 +339,11 @@
     <div id="audioToggle" onclick="toggleAudio()" title="Toggle Audio">🔊</div>
 
     <div id="score" class="ui">Championship points: 0</div>
+    <div id="speedIndicator" class="ui">Speed: 0 km/h</div>
     <div id="instructions" class="ui">
         Hold to Jump Higher<br>
-        Gap the Red Bull second drivers<br>
-        but never quite catch Max!
+        Red = incoming obstacles!<br>
+        Yellow = perfect jump zone!
     </div>
 
     <div id="introText" class="ui">
@@ -354,9 +372,15 @@
             <p>• Quick tap for small hops</p>
             <p>• Watch the charge bar above your car!</p>
 
+            <h3>Mobile Tips:</h3>
+            <p>• Look for red warning indicators showing incoming obstacles</p>
+            <p>• Yellow zones indicate perfect jump timing</p>
+            <p>• Speed indicator helps you anticipate difficulty</p>
+
             <h3>Gameplay:</h3>
             <p>• Jump over Red Bull cars to earn championship points</p>
             <p>• The game gets faster and more challenging as you progress</p>
+            <p>• Watch out for obstacle clusters!</p>
             <p>• Don't crash into the Red Bull cars!</p>
         </div>
         <button class="menu-button back-button" onclick="showMainMenu()">Back</button>
@@ -403,6 +427,7 @@
     let devicePixelRatio = window.devicePixelRatio || 1;
     let displayWidth, displayHeight;
     let canvasWidth, canvasHeight;
+    let isMobilePortrait = false;
 
     // Audio setup
     const backgroundMusic = document.getElementById('backgroundMusic');
@@ -411,7 +436,7 @@
     let audioInitialized = false;
 
     // Set initial volume
-    backgroundMusic.volume = 0.3; // 30% volume to not be too loud
+    backgroundMusic.volume = 0.3;
 
     // Frame rate management
     const TARGET_FPS = 60;
@@ -419,7 +444,13 @@
     let lastFrameTime = 0;
     let deltaTimeAccumulator = 0;
 
-    // Function to initialize and start audio (needed for browser autoplay policies)
+    // Check if device is mobile in portrait mode
+    function checkMobilePortrait() {
+        isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+        return isMobilePortrait;
+    }
+
+    // Function to initialize and start audio
     function initializeAudio() {
         if (!audioInitialized && !isAudioMuted) {
             backgroundMusic.play().then(() => {
@@ -427,12 +458,10 @@
                 console.log('Audio initialized and playing successfully');
             }).catch(error => {
                 console.log('Audio initialization failed:', error);
-                // Try again on next user interaction
             });
         }
     }
 
-    // Function to start audio if it's not muted
     function startAudio() {
         if (!isAudioMuted) {
             if (!audioInitialized) {
@@ -445,7 +474,6 @@
         }
     }
 
-    // Toggle audio function
     function toggleAudio() {
         if (!audioInitialized) {
             initializeAudio();
@@ -476,54 +504,52 @@
         displayWidth = containerRect.width;
         displayHeight = containerRect.height;
 
-        // Set the internal size to the display size scaled by device pixel ratio
+        checkMobilePortrait();
+
         canvasWidth = displayWidth * devicePixelRatio;
         canvasHeight = displayHeight * devicePixelRatio;
 
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
 
-        // Scale the canvas back down using CSS
         canvas.style.width = displayWidth + 'px';
         canvas.style.height = displayHeight + 'px';
 
-        // Scale the drawing context so everything draws at the higher resolution
         ctx.scale(devicePixelRatio, devicePixelRatio);
 
-        // Update game dimensions
         updateGameDimensions();
     }
 
     // Game state
-    let gameState = 'menu'; // 'menu', 'intro', 'playing', 'gameOver'
+    let gameState = 'menu';
     let gameRunning = false;
     let score = 0;
-    let gameTime = 0; // Time-based instead of frame-based
+    let gameTime = 0;
     let introStartTime = 0;
-    const introDuration = 3000; // 3 seconds
+    const introDuration = 3000;
 
-    // Background scrolling offset for smooth movement
+    // Background scrolling offset
     let backgroundOffset = 0;
 
-    // Input tracking for seamless jump chaining
+    // Input tracking
     let isInputDown = false;
     let chargeStartTime = 0;
-    let wantsToCharge = false; // New flag for input buffering
+    let wantsToCharge = false;
 
-    // McLaren player with variable jump (using relative sizing)
+    // Player with adaptive positioning for mobile
     const player = {
-        x: 0, // Will be set relative to screen width
+        x: 0,
         y: 0,
-        width: 0, // Will be set relative to screen size
+        width: 0,
         height: 0,
         velocityY: 0,
         grounded: false,
-        minJumpPower: -300, // Much stronger jumps (pixels per second)
-        maxJumpPower: -700, // Maximum jump power
-        gravity: 1600, // Stronger gravity (pixels per second squared)
+        minJumpPower: -300,
+        maxJumpPower: -700,
+        gravity: 1600,
         isCharging: false,
         chargeTime: 0,
-        maxChargeTime: 400 // milliseconds
+        maxChargeTime: 300
     };
 
     const maxCar = {
@@ -535,30 +561,51 @@
         visible: false
     };
 
-    // Red Bull obstacles - improved spawn system
+    // Enhanced obstacle system with mobile optimizations
     const obstacles = [];
-    let obstacleSpawnRate = 3000; // Start faster (3 seconds between spawns)
-    let obstacleSpeed = 400; // Much faster starting speed (was 150)
-    let minObstacleGap = 0; // Will be set relative to screen width
+    let obstacleSpawnRate = 1800;
+    let obstacleSpeed = 800;
+    let minObstacleGap = 0;
     let lastObstacleTime = 0;
-    let difficultyLevel = 0; // Track current difficulty level
+    let difficultyLevel = 0;
+    let obstacleClusterChance = 0.3;
+
+    // Mobile optimization variables
+    let warningZone = 0; // Distance from right edge to show warnings
+    let perfectJumpZone = 0; // Distance for perfect jump timing indicators
 
     // Ground level
     let groundY;
 
     function updateGameDimensions() {
-        // Set player size relative to screen but with more reasonable proportions
-        player.width = Math.min(80, displayWidth * 0.1); // 80px max, 10% of screen width min
-        player.height = Math.min(40, displayHeight * 0.067); // 40px max, maintain aspect ratio
-        player.x = displayWidth * 0.125; // 12.5% from left edge
+        // Adaptive player positioning for mobile portrait
+        if (isMobilePortrait) {
+            player.width = Math.min(60, displayWidth * 0.12);
+            player.height = Math.min(30, displayHeight * 0.04);
+            player.x = displayWidth * 0.2; // Move player more to the left for better visibility
+
+            // Increase warning and perfect jump zones for mobile
+            warningZone = displayWidth * 0.6; // Warn when obstacles are 60% across screen
+            perfectJumpZone = displayWidth * 0.4; // Perfect timing at 40% across screen
+
+            // Slower initial speeds for mobile
+            obstacleSpeed = Math.max(600, obstacleSpeed * 0.8);
+            obstacleSpawnRate = Math.max(2000, obstacleSpawnRate * 1.2);
+        } else {
+            player.width = Math.min(80, displayWidth * 0.1);
+            player.height = Math.min(40, displayHeight * 0.067);
+            player.x = displayWidth * 0.125;
+
+            warningZone = displayWidth * 0.4;
+            perfectJumpZone = displayWidth * 0.25;
+        }
 
         maxCar.width = player.width;
         maxCar.height = player.height;
-        maxCar.x = displayWidth * 0.225; // Start ahead of player
+        maxCar.x = displayWidth * 0.225;
 
-        groundY = displayHeight - Math.min(100, displayHeight * 0.167); // 100px from bottom max
-
-        minObstacleGap = Math.max(180, displayWidth * 0.225); // 180px min gap
+        groundY = displayHeight - Math.min(100, displayHeight * 0.167);
+        minObstacleGap = Math.max(isMobilePortrait ? 140 : 120, displayWidth * 0.15);
 
         if (!player.grounded) {
         } else {
@@ -567,7 +614,7 @@
         maxCar.y = groundY - maxCar.height;
     }
 
-    // Image loading code remains the same...
+    // Image loading
     const treeImage = new Image();
     let treeImageLoaded = false;
     treeImage.onload = function() { treeImageLoaded = true; };
@@ -611,10 +658,8 @@
         }
     }
 
-    // Enhanced jump system with input buffering (time-based)
     function startCharging() {
         wantsToCharge = true;
-        // Immediately start charging if already grounded
         if (player.grounded && !player.isCharging) {
             player.isCharging = true;
             chargeStartTime = gameTime;
@@ -638,24 +683,20 @@
             player.isCharging = false;
             chargeStartTime = 0;
 
-            // Ensure we're slightly off the ground to prevent immediate re-grounding
             if (player.y >= groundY - player.height) {
                 player.y = groundY - player.height - 1;
             }
-
-            // Keep wantsToCharge true if input is still held
-            // This will trigger auto-charge on next landing
         }
     }
 
-    // Draw McLaren with charge indicator
+    // Enhanced drawing functions with mobile indicators
     function drawMcLaren(x, y) {
         if (mclarenImageLoaded && mclarenImage.complete) {
             const spriteAspectRatio = mclarenImage.width / mclarenImage.height;
             const scaledWidth = player.height * spriteAspectRatio;
             ctx.drawImage(mclarenImage, x, y, scaledWidth, player.height);
         } else {
-            // Fallback
+            // Fallback drawing
             ctx.fillStyle = '#ff6600';
             ctx.fillRect(x, y, player.width, player.height);
             ctx.fillStyle = '#000000';
@@ -672,21 +713,21 @@
             ctx.fillText('MCL', x + player.width * 0.3125, y + player.height * 0.625);
         }
 
-        // Draw charge indicator (show when charging OR wanting to charge)
+        // Enhanced charge indicator
         if ((player.isCharging && (player.grounded || player.velocityY >= 0)) ||
             (wantsToCharge && !player.grounded)) {
             const chargeRatio = player.isCharging ?
                 Math.min((gameTime - chargeStartTime) / player.maxChargeTime, 1) : 0;
-            const barWidth = 60; // Fixed charge bar width
-            const barHeight = 6; // Fixed charge bar height
+            const barWidth = isMobilePortrait ? 50 : 60;
+            const barHeight = isMobilePortrait ? 5 : 6;
             const barX = x + (player.width - barWidth) / 2;
-            const barY = y - 15; // Fixed offset above car
+            const barY = y - (isMobilePortrait ? 12 : 15);
 
             // Background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(barX, barY, barWidth, barHeight);
 
-            // Charge bar or ready indicator
+            // Charge bar
             if (player.isCharging) {
                 const chargeWidth = barWidth * chargeRatio;
                 if (chargeRatio < 0.5) {
@@ -698,8 +739,7 @@
                 }
                 ctx.fillRect(barX, barY, chargeWidth, barHeight);
             } else if (wantsToCharge) {
-                // Show "ready to charge" indicator
-                ctx.fillStyle = '#00ffff'; // Cyan to indicate ready state
+                ctx.fillStyle = '#00ffff';
                 ctx.fillRect(barX, barY, barWidth * 0.1, barHeight);
             }
 
@@ -710,8 +750,35 @@
         }
     }
 
-    // Draw Red Bull cars (updated for responsive sizing)
-    function drawRedBull(x, y, width, height) {
+    function drawRedBull(x, y, width, height, showWarning = false, showPerfectZone = false) {
+        // Warning indicator for mobile
+        if (isMobilePortrait && showWarning) {
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.fillRect(x - 10, 0, width + 20, displayHeight);
+
+            // Flashing warning text
+            if (Math.floor(gameTime / 200) % 2 === 0) {
+                ctx.fillStyle = '#ff0000';
+                ctx.font = `${Math.min(16, displayHeight * 0.025)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('INCOMING!', x + width/2, 30);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // Perfect jump zone indicator
+        if (isMobilePortrait && showPerfectZone) {
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+            ctx.fillRect(x - 5, groundY - height - 60, width + 10, 60);
+
+            ctx.fillStyle = '#ffff00';
+            ctx.font = `${Math.min(14, displayHeight * 0.02)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('JUMP NOW!', x + width/2, groundY - height - 45);
+            ctx.textAlign = 'left';
+        }
+
+        // Draw the car
         if (redBullImageLoaded && redBullImage.complete) {
             const spriteAspectRatio = redBullImage.width / redBullImage.height;
             const scaledWidth = height * spriteAspectRatio;
@@ -768,6 +835,7 @@
         document.getElementById('credits').style.display = 'none';
         document.getElementById('gameOver').style.display = 'none';
         document.getElementById('score').style.display = 'none';
+        document.getElementById('speedIndicator').style.display = 'none';
         document.getElementById('instructions').style.display = 'none';
         document.getElementById('introText').style.display = 'none';
         updateDriverImages();
@@ -792,7 +860,16 @@
         gameTime = 0;
         introStartTime = 0;
         difficultyLevel = 0;
-        backgroundOffset = 0; // Reset background scroll position
+        backgroundOffset = 0;
+
+        // Reset mobile-optimized speeds
+        if (isMobilePortrait) {
+            obstacleSpawnRate = 2200; // Slower spawn for mobile
+            obstacleSpeed = 600; // Slower initial speed for mobile
+        } else {
+            obstacleSpawnRate = 1800;
+            obstacleSpeed = 800;
+        }
 
         player.y = groundY - player.height;
         player.velocityY = 0;
@@ -805,37 +882,31 @@
         maxCar.visible = true;
 
         obstacles.length = 0;
-        obstacleSpawnRate = 3000; // Faster spawn rate
-        obstacleSpeed = Math.max(500, displayWidth * 0.625); // Much faster starting speed
         lastObstacleTime = 0;
+        obstacleClusterChance = isMobilePortrait ? 0.2 : 0.3; // Fewer clusters on mobile
 
         document.getElementById('mainMenu').style.display = 'none';
         document.getElementById('gameOver').style.display = 'none';
         document.getElementById('score').style.display = 'block';
+        document.getElementById('speedIndicator').style.display = 'block';
         document.getElementById('instructions').style.display = 'none';
         document.getElementById('introText').style.display = 'block';
 
         requestAnimationFrame(gameLoop);
     }
 
-    // Fixed background drawing functions with smooth scrolling (time-based)
     function drawTrees(deltaTime) {
         if (treeImageLoaded && treeImage.complete) {
-            const treeSpacing = Math.max(200, displayWidth * 0.25); // 200px min spacing
-            const scrollSpeed = Math.max(200, displayWidth * 0.25); // Much faster tree scroll
+            const treeSpacing = Math.max(200, displayWidth * 0.25);
+            const scrollSpeed = Math.max(300, displayWidth * 0.375);
 
-            // Update background offset for smooth scrolling (time-based)
             backgroundOffset += scrollSpeed * (deltaTime / 1000);
-
-            // Calculate the starting position to ensure seamless wrapping
             const startX = -(backgroundOffset % treeSpacing);
 
-            // Draw trees across the screen with some extra on both sides
             for (let i = startX - treeSpacing; i < displayWidth + treeSpacing; i += treeSpacing) {
-                // Use the tree position to generate a consistent but varied appearance
                 const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
                 const treeScale = 0.4 + (Math.sin(treeSeed) * 0.2);
-                const baseTreeSize = Math.min(120, displayHeight * 0.2); // 120px max tree size
+                const baseTreeSize = Math.min(120, displayHeight * 0.2);
                 const treeWidth = baseTreeSize * treeScale;
                 const treeHeight = baseTreeSize * treeScale;
                 const treeY = groundY - treeHeight;
@@ -858,31 +929,27 @@
         ctx.fillStyle = '#494241';
         ctx.fillRect(0, groundY, displayWidth, displayHeight - groundY);
 
-        // Fixed road lines with smooth scrolling (time-based)
+        // Road lines
         ctx.fillStyle = 'white';
-        const roadLineSpacing = Math.max(100, displayWidth * 0.125);
-        const roadScrollSpeed = Math.max(600, displayWidth * 0.75); // Much faster road scroll
+        const roadLineSpacing = Math.max(80, displayWidth * 0.1);
+        const roadScrollSpeed = Math.max(800, displayWidth);
         const roadOffset = ((gameTime * roadScrollSpeed) / 1000) % roadLineSpacing;
 
         for (let i = -roadOffset; i < displayWidth + 50; i += roadLineSpacing) {
-            ctx.fillRect(i, groundY - 5, 50, 3);
+            ctx.fillRect(i, groundY - 5, 40, 3);
         }
     }
 
-    // Update player physics with auto-charge on landing (time-based)
     function updatePlayer(deltaTime) {
-        // Apply gravity (time-based) - scale based on actual pixels, not screen size
         player.velocityY += player.gravity * (deltaTime / 1000);
         player.y += player.velocityY * (deltaTime / 1000);
 
-        // Check for landing
         const wasGrounded = player.grounded;
         if (player.y >= groundY - player.height) {
             player.y = groundY - player.height;
             player.velocityY = 0;
             player.grounded = true;
 
-            // Auto-start charging if player wants to charge and just landed
             if (!wasGrounded && wantsToCharge && !player.isCharging) {
                 player.isCharging = true;
                 chargeStartTime = gameTime;
@@ -892,11 +959,10 @@
         }
     }
 
-    // Update Max's car during intro (time-based)
     function updateMaxCar(deltaTime) {
         if (gameState === 'intro') {
-            if (gameTime > 1000) { // Start moving after 1 second
-                const accelerationPerSecond = displayWidth * 0.3; // Even faster acceleration (+20%)
+            if (gameTime > 1000) {
+                const accelerationPerSecond = displayWidth * 0.4;
                 maxCar.speed += accelerationPerSecond * (deltaTime / 1000);
                 maxCar.x += maxCar.speed * (deltaTime / 1000);
             }
@@ -905,49 +971,87 @@
             }
             if (gameTime >= introDuration) {
                 gameState = 'playing';
+                lastObstacleTime = gameTime;
                 document.getElementById('introText').style.display = 'none';
                 document.getElementById('instructions').style.display = 'block';
             }
         }
     }
 
-    // Update obstacles with improved spawning logic (time-based)
+    function spawnObstacle(x) {
+        const obstacleHeight = isMobilePortrait ? 32 : 35;
+        const obstacleY = groundY - obstacleHeight;
+
+        obstacles.push({
+            x: x,
+            y: obstacleY,
+            width: isMobilePortrait ? 65 : 70,
+            height: obstacleHeight
+        });
+    }
+
     function updateObstacles(deltaTime) {
         if (gameState !== 'playing') return;
 
-        const newDifficultyLevel = Math.floor(score / 5);
+        const newDifficultyLevel = Math.floor(score / (isMobilePortrait ? 4 : 3)); // Slower progression on mobile
 
         if (newDifficultyLevel > difficultyLevel) {
             difficultyLevel = newDifficultyLevel;
 
-            if (difficultyLevel <= 10) {
-                obstacleSpawnRate = Math.max(1500, 3000 - (difficultyLevel * 120)); // Faster spawning
-                obstacleSpeed = Math.min(900, Math.max(500, displayWidth * 0.625) + (difficultyLevel * 40)); // Faster progression
-                minObstacleGap = Math.max(140, Math.max(180, displayWidth * 0.225) - (difficultyLevel * 5));
+            if (isMobilePortrait) {
+                // More conservative mobile difficulty scaling
+                if (difficultyLevel <= 10) {
+                    obstacleSpawnRate = Math.max(1200, 2200 - (difficultyLevel * 80));
+                    obstacleSpeed = Math.min(1000, 600 + (difficultyLevel * 40));
+                    minObstacleGap = Math.max(120, 140 - (difficultyLevel * 2));
+                    obstacleClusterChance = Math.min(0.5, 0.2 + (difficultyLevel * 0.02));
+                } else {
+                    obstacleSpawnRate = Math.max(800, 1200 - ((difficultyLevel - 10) * 30));
+                    obstacleSpeed = Math.min(1400, 1000 + ((difficultyLevel - 10) * 40));
+                    minObstacleGap = Math.max(100, 120 - ((difficultyLevel - 10) * 2));
+                    obstacleClusterChance = Math.min(0.7, 0.5 + ((difficultyLevel - 10) * 0.02));
+                }
             } else {
-                obstacleSpawnRate = Math.max(800, 1500 - ((difficultyLevel - 10) * 60)); // Very fast spawning
-                obstacleSpeed = Math.min(1400, 900 + ((difficultyLevel - 10) * 50)); // Very fast speed
-                minObstacleGap = Math.max(120, 140 - ((difficultyLevel - 10) * 2));
+                // Original desktop difficulty scaling
+                if (difficultyLevel <= 15) {
+                    obstacleSpawnRate = Math.max(800, 1800 - (difficultyLevel * 80));
+                    obstacleSpeed = Math.min(1400, 800 + (difficultyLevel * 60));
+                    minObstacleGap = Math.max(90, Math.max(120, displayWidth * 0.15) - (difficultyLevel * 3));
+                    obstacleClusterChance = Math.min(0.7, 0.3 + (difficultyLevel * 0.025));
+                } else {
+                    obstacleSpawnRate = Math.max(400, 800 - ((difficultyLevel - 15) * 40));
+                    obstacleSpeed = Math.min(2000, 1400 + ((difficultyLevel - 15) * 80));
+                    minObstacleGap = Math.max(70, 90 - ((difficultyLevel - 15) * 2));
+                    obstacleClusterChance = Math.min(0.9, 0.7 + ((difficultyLevel - 15) * 0.02));
+                }
             }
         }
 
-        // Spawn obstacles based on time
+        // Spawn obstacles
         if (gameTime - lastObstacleTime >= obstacleSpawnRate) {
             const canSpawn = obstacles.length === 0 ||
                 (displayWidth - obstacles[obstacles.length - 1].x) >= minObstacleGap;
 
             if (canSpawn) {
-                obstacles.push({
-                    x: displayWidth,
-                    y: groundY - 35, // Fixed obstacle height
-                    width: 70, // Fixed obstacle width  
-                    height: 35 // Fixed obstacle height
-                });
+                const shouldCluster = Math.random() < obstacleClusterChance;
+
+                if (shouldCluster && obstacles.length > 0) {
+                    const clusterSize = 2 + Math.floor(Math.random() * (isMobilePortrait ? 2 : 3)); // Smaller clusters on mobile
+                    const clusterGap = Math.max(40, minObstacleGap * 0.4);
+
+                    for (let i = 0; i < clusterSize; i++) {
+                        const x = displayWidth + (i * clusterGap);
+                        spawnObstacle(x);
+                    }
+                } else {
+                    spawnObstacle(displayWidth);
+                }
+
                 lastObstacleTime = gameTime;
             }
         }
 
-        // Move obstacles (time-based)
+        // Move obstacles
         for (let i = obstacles.length - 1; i >= 0; i--) {
             obstacles[i].x -= obstacleSpeed * (deltaTime / 1000);
             if (obstacles[i].x + obstacles[i].width < 0) {
@@ -957,7 +1061,6 @@
         }
     }
 
-    // Collision detection
     function checkCollisions() {
         if (gameState !== 'playing') return;
         for (let obstacle of obstacles) {
@@ -972,17 +1075,14 @@
         }
     }
 
-    // Game loop with fixed timestep
     function gameLoop(currentTime) {
         if (!gameRunning) return;
 
         const deltaTime = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
 
-        // Accumulate delta time
         deltaTimeAccumulator += deltaTime;
 
-        // Fixed timestep update
         while (deltaTimeAccumulator >= TARGET_FRAME_TIME) {
             gameTime += TARGET_FRAME_TIME;
 
@@ -1006,11 +1106,18 @@
 
         if (gameState === 'playing') {
             for (let obstacle of obstacles) {
-                drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                const showWarning = isMobilePortrait && obstacle.x > displayWidth - warningZone && obstacle.x < displayWidth;
+                const showPerfectZone = isMobilePortrait && obstacle.x > displayWidth - perfectJumpZone && obstacle.x < displayWidth - perfectJumpZone + 50;
+
+                drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height, showWarning, showPerfectZone);
             }
         }
 
+        // Update UI
         document.getElementById('score').textContent = `Championship points: ${score}`;
+        const speedKmh = Math.round((obstacleSpeed / 1000) * 3.6 * 10); // Convert to approximate km/h
+        document.getElementById('speedIndicator').textContent = `Speed: ${speedKmh} km/h`;
+
         requestAnimationFrame(gameLoop);
     }
 
@@ -1019,19 +1126,19 @@
         gameRunning = false;
         document.getElementById('finalScore').textContent = `Final Score: ${score}`;
         document.getElementById('gameOver').style.display = 'block';
+        document.getElementById('speedIndicator').style.display = 'none';
     }
 
     function restartGame() {
         startGame();
     }
 
-    // Enhanced event listeners with input buffering
+    // Enhanced event listeners
     canvas.addEventListener('mousedown', (e) => {
         e.preventDefault();
         if (gameState === 'playing') {
             startCharging();
         }
-        // Initialize audio on first interaction
         if (!audioInitialized && !isAudioMuted) {
             initializeAudio();
         }
@@ -1050,7 +1157,6 @@
         if (gameState === 'playing') {
             startCharging();
         }
-        // Initialize audio on first interaction
         if (!audioInitialized && !isAudioMuted) {
             initializeAudio();
         }
@@ -1090,7 +1196,6 @@
                 isInputDown = true;
                 startCharging();
             }
-            // Initialize audio on first interaction
             if (!audioInitialized && !isAudioMuted) {
                 initializeAudio();
             }
@@ -1110,7 +1215,6 @@
 
     // Handle window resize
     window.addEventListener('resize', () => {
-        // Debounce resize events
         clearTimeout(window.resizeTimeout);
         window.resizeTimeout = setTimeout(() => {
             devicePixelRatio = window.devicePixelRatio || 1;
