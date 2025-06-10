@@ -143,24 +143,33 @@
             display: flex;
         }
 
-        #howToPlay, #credits {
+        #howToPlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 30;
+            border: 2px solid #ff6600;
             display: none;
             flex-direction: column;
-            max-width: 90vw;
-            width: 800px;
-            max-height: 95vh; /* Limit modal height to 80% of viewport */
-            overflow-y: auto;  /* Enable vertical scroll if content exceeds height */
             box-sizing: border-box;
+            width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
-        @media (max-width: 768px) {
-            #howToPlay, #credits {
-                width: 90vw;
-                max-height: 85vh;
+        @media (max-width: 480px) {
+            #howToPlay {
                 padding: 20px;
-                overflow-y: auto;
+                width: 95vw;
+                max-height: 85vh;
             }
         }
+
 
         .menu-center {
             display: flex;
@@ -222,9 +231,10 @@
 
         .menu-content {
             color: white;
-            line-height: 1.6;
+            line-height: 1.5;
             text-align: left;
-            max-width: 400px;
+            max-width: 100%;
+            font-size: 14px;
         }
 
         .menu-content h3 {
@@ -272,7 +282,6 @@
             to { right: 100%; }
         }
 
-        /* Mobile Portrait Optimizations */
         @media (max-width: 768px) and (orientation: portrait) {
             #gameContainer {
                 border: none;
@@ -349,7 +358,6 @@
 <div id="gameContainer">
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Audio Toggle Button -->
     <div id="audioToggle" onclick="toggleAudio()" title="Toggle Audio">🔊</div>
 
     <div id="score" class="ui">Championship points: 0</div>
@@ -424,7 +432,6 @@
         <button class="back-button" onclick="showMainMenu()" style="margin-left: 10px;">Main Menu</button>
     </div>
 
-    <!-- Audio Element -->
     <audio id="backgroundMusic" loop>
         <source src="./Resources/Audio/theme.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
@@ -435,34 +442,28 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Device pixel ratio for sharp rendering on high-DPI displays
     let devicePixelRatio = window.devicePixelRatio || 1;
     let displayWidth, displayHeight;
     let canvasWidth, canvasHeight;
     let isMobilePortrait = false;
 
-    // Audio setup
     const backgroundMusic = document.getElementById('backgroundMusic');
     const audioToggle = document.getElementById('audioToggle');
     let isAudioMuted = false;
     let audioInitialized = false;
 
-    // Set initial volume
     backgroundMusic.volume = 0.3;
 
-    // Frame rate management
     const TARGET_FPS = 60;
     const TARGET_FRAME_TIME = 1000 / TARGET_FPS;
     let lastFrameTime = 0;
     let deltaTimeAccumulator = 0;
 
-    // Check if device is mobile in portrait mode
     function checkMobilePortrait() {
         isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
         return isMobilePortrait;
     }
 
-    // Function to initialize and start audio
     function initializeAudio() {
         if (!audioInitialized && !isAudioMuted) {
             backgroundMusic.play().then(() => {
@@ -508,7 +509,6 @@
         }
     }
 
-    // Set canvas size with proper scaling
     function resizeCanvas() {
         const container = document.getElementById('gameContainer');
         const containerRect = container.getBoundingClientRect();
@@ -532,7 +532,6 @@
         updateGameDimensions();
     }
 
-    // Game state
     let gameState = 'menu';
     let gameRunning = false;
     let score = 0;
@@ -540,15 +539,12 @@
     let introStartTime = 0;
     const introDuration = 3000;
 
-    // Background scrolling offset
     let backgroundOffset = 0;
 
-    // Input tracking
     let isInputDown = false;
     let chargeStartTime = 0;
     let wantsToCharge = false;
 
-    // Player with adaptive positioning for mobile
     const player = {
         x: 0,
         y: 0,
@@ -573,7 +569,6 @@
         visible: false
     };
 
-    // Enhanced obstacle system with mobile optimizations
     const obstacles = [];
     let obstacleSpawnRate = 1800;
     let obstacleSpeed = 800;
@@ -582,25 +577,20 @@
     let difficultyLevel = 0;
     let obstacleClusterChance = 0.3;
 
-    // Mobile optimization variables
-    let warningZone = 0; // Distance from right edge to show warnings
-    let perfectJumpZone = 0; // Distance for perfect jump timing indicators
+    let warningZone = 0; 
+    let perfectJumpZone = 0; 
 
-    // Ground level
     let groundY;
 
     function updateGameDimensions() {
-        // Adaptive player positioning for mobile portrait
         if (isMobilePortrait) {
             player.width = Math.min(60, displayWidth * 0.12);
             player.height = Math.min(30, displayHeight * 0.04);
-            player.x = displayWidth * 0.2; // Move player more to the left for better visibility
+            player.x = displayWidth * 0.2; 
 
-            // Increase warning and perfect jump zones for mobile
-            warningZone = displayWidth * 0.6; // Warn when obstacles are 60% across screen
-            perfectJumpZone = displayWidth * 0.4; // Perfect timing at 40% across screen
+            warningZone = displayWidth * 0.6; 
+            perfectJumpZone = displayWidth * 0.4; 
 
-            // Slower initial speeds for mobile
             obstacleSpeed = Math.max(600, obstacleSpeed * 0.8);
             obstacleSpawnRate = Math.max(2000, obstacleSpawnRate * 1.2);
         } else {
@@ -626,7 +616,6 @@
         maxCar.y = groundY - maxCar.height;
     }
 
-    // Image loading
     const treeImage = new Image();
     let treeImageLoaded = false;
     treeImage.onload = function() { treeImageLoaded = true; };
@@ -701,14 +690,12 @@
         }
     }
 
-    // Enhanced drawing functions with mobile indicators
     function drawMcLaren(x, y) {
         if (mclarenImageLoaded && mclarenImage.complete) {
             const spriteAspectRatio = mclarenImage.width / mclarenImage.height;
             const scaledWidth = player.height * spriteAspectRatio;
             ctx.drawImage(mclarenImage, x, y, scaledWidth, player.height);
         } else {
-            // Fallback drawing
             ctx.fillStyle = '#ff6600';
             ctx.fillRect(x, y, player.width, player.height);
             ctx.fillStyle = '#000000';
@@ -725,7 +712,6 @@
             ctx.fillText('MCL', x + player.width * 0.3125, y + player.height * 0.625);
         }
 
-        // Enhanced charge indicator
         if ((player.isCharging && (player.grounded || player.velocityY >= 0)) ||
             (wantsToCharge && !player.grounded)) {
             const chargeRatio = player.isCharging ?
@@ -735,11 +721,9 @@
             const barX = x + (player.width - barWidth) / 2;
             const barY = y - (isMobilePortrait ? 12 : 15);
 
-            // Background
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(barX, barY, barWidth, barHeight);
 
-            // Charge bar
             if (player.isCharging) {
                 const chargeWidth = barWidth * chargeRatio;
                 if (chargeRatio < 0.5) {
@@ -755,7 +739,6 @@
                 ctx.fillRect(barX, barY, barWidth * 0.1, barHeight);
             }
 
-            // Border
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 1;
             ctx.strokeRect(barX, barY, barWidth, barHeight);
@@ -763,7 +746,6 @@
     }
 
     function drawRedBull(x, y, width, height, showWarning = false, showPerfectZone = false) {
-        // Draw the car
         if (redBullImageLoaded && redBullImage.complete) {
             const spriteAspectRatio = redBullImage.width / redBullImage.height;
             const scaledWidth = height * spriteAspectRatio;
@@ -811,7 +793,6 @@
         }
     }
 
-    // Menu functions
     function showMainMenu() {
         gameState = 'menu';
         gameRunning = false;
@@ -847,10 +828,9 @@
         difficultyLevel = 0;
         backgroundOffset = 0;
 
-        // Reset mobile-optimized speeds
         if (isMobilePortrait) {
-            obstacleSpawnRate = 2200; // Slower spawn for mobile
-            obstacleSpeed = 600; // Slower initial speed for mobile
+            obstacleSpawnRate = 2200; 
+            obstacleSpeed = 600; 
         } else {
             obstacleSpawnRate = 1800;
             obstacleSpeed = 800;
@@ -891,11 +871,10 @@
             for (let i = startX - treeSpacing * 2; i < displayWidth + treeSpacing * 4; i += treeSpacing) {
                 const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
 
-                // More variation, slightly smaller overall scale
                 const rand = Math.abs(Math.sin(treeSeed * 87.42)) % 1;
-                const treeScale = 0.9 + rand * 1.4; // Range: 0.9 to 2.3
+                const treeScale = 0.9 + rand * 1.4; 
 
-                const baseTreeSize = Math.min(200, displayHeight * 3.5); // Slightly smaller base
+                const baseTreeSize = Math.min(200, displayHeight * 3.5); 
                 const treeWidth = baseTreeSize * treeScale;
                 const treeHeight = baseTreeSize * treeScale;
                 const treeY = groundY - treeHeight;
@@ -918,7 +897,6 @@
         ctx.fillStyle = '#494241';
         ctx.fillRect(0, groundY, displayWidth, displayHeight - groundY);
 
-        // Road lines
         ctx.fillStyle = 'white';
         const roadLineSpacing = Math.max(80, displayWidth * 0.1);
         const roadScrollSpeed = Math.max(800, displayWidth);
@@ -982,13 +960,12 @@
     function updateObstacles(deltaTime) {
         if (gameState !== 'playing') return;
 
-        const newDifficultyLevel = Math.floor(score / (isMobilePortrait ? 4 : 3)); // Slower progression on mobile
+        const newDifficultyLevel = Math.floor(score / (isMobilePortrait ? 4 : 3)); 
 
         if (newDifficultyLevel > difficultyLevel) {
             difficultyLevel = newDifficultyLevel;
 
             if (isMobilePortrait) {
-                // More conservative mobile difficulty scaling
                 if (difficultyLevel <= 10) {
                     obstacleSpawnRate = Math.max(1200, 2200 - (difficultyLevel * 80));
                     obstacleSpeed = Math.min(1000, 600 + (difficultyLevel * 40));
@@ -1001,7 +978,6 @@
                     obstacleClusterChance = Math.min(0.7, 0.5 + ((difficultyLevel - 10) * 0.02));
                 }
             } else {
-                // Original desktop difficulty scaling
                 if (difficultyLevel <= 15) {
                     obstacleSpawnRate = Math.max(800, 1800 - (difficultyLevel * 80));
                     obstacleSpeed = Math.min(1400, 800 + (difficultyLevel * 60));
@@ -1016,7 +992,6 @@
             }
         }
 
-        // Spawn obstacles
         if (gameTime - lastObstacleTime >= obstacleSpawnRate) {
             const canSpawn = obstacles.length === 0 ||
                 (displayWidth - obstacles[obstacles.length - 1].x) >= minObstacleGap;
@@ -1025,7 +1000,7 @@
                 const shouldCluster = Math.random() < obstacleClusterChance;
 
                 if (shouldCluster && obstacles.length > 0) {
-                    const clusterSize = 2 + Math.floor(Math.random() * (isMobilePortrait ? 2 : 3)); // Smaller clusters on mobile
+                    const clusterSize = 2 + Math.floor(Math.random() * (isMobilePortrait ? 2 : 3)); 
                     const clusterGap = Math.max(40, minObstacleGap * 0.4);
 
                     for (let i = 0; i < clusterSize; i++) {
@@ -1040,7 +1015,6 @@
             }
         }
 
-        // Move obstacles
         for (let i = obstacles.length - 1; i >= 0; i--) {
             obstacles[i].x -= obstacleSpeed * (deltaTime / 1000);
             if (obstacles[i].x + obstacles[i].width < 0) {
@@ -1095,7 +1069,6 @@
 
         if (gameState === 'playing') {
             for (let obstacle of obstacles) {
-                // More precise warning zone detection to prevent off-screen drawing
                 const obstacleInView = obstacle.x + obstacle.width > 0 && obstacle.x < displayWidth;
                 const showWarning = isMobilePortrait && obstacleInView &&
                     obstacle.x > displayWidth - warningZone && obstacle.x < displayWidth;
@@ -1109,7 +1082,7 @@
 
         // Update UI
         document.getElementById('score').textContent = `Championship points: ${score}`;
-        const speedKmh = Math.round((obstacleSpeed / 1000) * 3.6 * 10); // Convert to approximate km/h
+        const speedKmh = Math.round((obstacleSpeed / 1000) * 3.6 * 10); 
         document.getElementById('speedIndicator').textContent = `Speed: ${speedKmh} km/h`;
 
         requestAnimationFrame(gameLoop);
@@ -1127,7 +1100,6 @@
         startGame();
     }
 
-    // Enhanced event listeners
     canvas.addEventListener('mousedown', (e) => {
         e.preventDefault();
         if (gameState === 'playing') {
@@ -1164,7 +1136,6 @@
         }
     });
 
-    // Prevent touch scrolling and zooming
     document.addEventListener('touchstart', (e) => {
         if (e.target === canvas) {
             e.preventDefault();
@@ -1207,7 +1178,6 @@
         }
     });
 
-    // Handle window resize
     window.addEventListener('resize', () => {
         clearTimeout(window.resizeTimeout);
         window.resizeTimeout = setTimeout(() => {
@@ -1216,7 +1186,6 @@
         }, 100);
     });
 
-    // Audio event listeners
     backgroundMusic.addEventListener('canplaythrough', () => {
         console.log('Audio is ready to play');
     });
@@ -1225,7 +1194,6 @@
         console.log('Audio loading error:', e);
     });
 
-    // Initialize canvas and start with main menu
     resizeCanvas();
     updateGameDimensions();
     player.y = groundY - player.height;
