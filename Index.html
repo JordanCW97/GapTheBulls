@@ -444,7 +444,7 @@
             <p>Charlotte's poor choice in F1 teams.</p>
 
             <h3>Special Thanks:</h3>
-            <p>To all F1 fans who know the pain of watching Max dominate the sport!</p>
+            <p>Charlotte for being pretty dang cool! ;)</p>
 
             <h3>Remember:</h3>
             <p>"It's lights out and away we go!" 🏁</p>
@@ -563,15 +563,13 @@
 
         fetch('https://gap-the-bulls-api.onrender.com/api/scores', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: playerName,
                 score: score
             })
         })
-            .then(response => {
-                return response.json
-            })
+            .then(response => response.json()) // ✅ Call .json()
             .then(data => {
                 console.log('Score submitted:', data);
                 nameInput.disabled = true;
