@@ -428,6 +428,26 @@
         <h2>Game Over!</h2>
         <p>Oops! Max made McLaren look bad again!</p>
         <p id="finalScore">Final Score: 0</p>
+
+        <div style="margin-top: 20px;">
+            <input id="playerNameInput" type="text" placeholder="Enter your name" maxlength="12"
+                   style="padding: 8px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc;">
+            <button onclick="submitHighScore()" style="margin-left: 10px;">Submit Score</button>
+        </div>
+
+        <div id="highScoresContainer" style="margin-top: 20px; text-align: center;">
+            <h3 style="color: #ff6600;">High Scores</h3>
+            <table id="highScoresTable" style="width: 100%; color: white; font-size: 14px; border-collapse: collapse;">
+                <thead>
+                <tr>
+                    <th style="text-align: left; padding: 4px;">Player</th>
+                    <th style="text-align: right; padding: 4px;">Score</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
         <button onclick="restartGame()">Try Again</button>
         <button class="back-button" onclick="showMainMenu()" style="margin-left: 10px;">Main Menu</button>
     </div>
@@ -509,6 +529,36 @@
         }
     }
 
+    function submitHighScore() {
+        const nameInput = document.getElementById('playerNameInput');
+        const playerName = nameInput.value.trim() || 'Anonymous';
+        const scoreEntry = { name: playerName, score };
+
+        let highScores = JSON.parse(localStorage.getItem('gapTheBullsScores')) || [];
+
+        highScores.push(scoreEntry);
+        highScores.sort((a, b) => b.score - a.score);
+        highScores = highScores.slice(0, 5); // top 5 scores
+
+        localStorage.setItem('gapTheBullsScores', JSON.stringify(highScores));
+
+        renderHighScores();
+        nameInput.disabled = true;
+    }
+
+    function renderHighScores() {
+        const highScores = JSON.parse(localStorage.getItem('gapTheBullsScores')) || [];
+        const tbody = document.querySelector('#highScoresTable tbody');
+
+        tbody.innerHTML = '';
+
+        highScores.forEach(entry => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td style="padding: 4px;">${entry.name}</td><td style="text-align: right; padding: 4px;">${entry.score}</td>`;
+            tbody.appendChild(row);
+        });
+    }
+
     function resizeCanvas() {
         const container = document.getElementById('gameContainer');
         const containerRect = container.getBoundingClientRect();
@@ -570,6 +620,7 @@
     };
 
     const obstacles = [];
+    const activeQuotes = [];
     let obstacleSpawnRate = 1800;
     let obstacleSpeed = 800;
     let minObstacleGap = 0;
@@ -577,8 +628,34 @@
     let difficultyLevel = 0;
     let obstacleClusterChance = 0.3;
 
+    let grandstandTimer = 0;
+    let grandstandVisible = true;
+    let grandstandX = 0;
+    let grandstandSpeed = 0;
+    const grandstandInterval = 15000 + Math.random() * 5000; 
+
     let warningZone = 0; 
-    let perfectJumpZone = 0; 
+    let perfectJumpZone = 0;
+
+    const overtakeQuotes = [
+        "They race me so hard...",
+        "Du du du du!",
+        "No papaya rules here!",
+        "Look at me now Zak!",
+        "Oh look it's Liam Slowson!",
+        "Box this lap? Nah, I’m boxing rivals instead.",
+        "That's how it's done, baby!",
+        "Maximum attack, let's go!",
+        "Is that a Red Bull or a traffic cone?",
+        "Smooth operator coming through!",
+        "Send it like it's Silverstone!",
+        "Clear air and clear conscience.",
+        "Lando mode: engaged.",
+        "This one's for Team Papaya!",
+        "Tell Oscar I said hi.",
+        "I need party mode!.",
+        "It's friday nightttt! Saturday sunday what?.",
+    ];
 
     let groundY;
 
@@ -631,6 +708,12 @@
     redBullImage.onerror = function() { redBullImageLoaded = false; };
     mclarenImage.src = './Resources/Sprites/MCL.png';
     redBullImage.src = './Resources/Sprites/RB.png';
+
+    const grandstandImage = new Image();
+    let grandstandImageLoaded = false;
+    grandstandImage.onload = () => grandstandImageLoaded = true;
+    grandstandImage.onerror = () => grandstandImageLoaded = false;
+    grandstandImage.src = './Resources/Sprites/grandstand.png';
 
     const landoImage = new Image();
     const maxImage = new Image();
@@ -826,6 +909,11 @@
         introStartTime = 0;
         difficultyLevel = 0;
         backgroundOffset = 0;
+        grandstandTimer = 0;
+        grandstandVisible = true;
+        grandstandX = displayWidth; 
+        grandstandSpeed = -displayWidth * 0.3; 
+        nextGrandstandInterval = 15000 + Math.random() * 5000;
 
         if (isMobilePortrait) {
             obstacleSpawnRate = 2200; 
@@ -847,7 +935,7 @@
 
         obstacles.length = 0;
         lastObstacleTime = 0;
-        obstacleClusterChance = isMobilePortrait ? 0.2 : 0.3; // Fewer clusters on mobile
+        obstacleClusterChance = isMobilePortrait ? 0.2 : 0.3; 
 
         document.getElementById('mainMenu').style.display = 'none';
         document.getElementById('gameOver').style.display = 'none';
@@ -893,6 +981,13 @@
         ctx.fillRect(0, 0, displayWidth, displayHeight);
 
         drawTrees(deltaTime);
+
+        if (grandstandVisible && grandstandImageLoaded) {
+            const grandstandWidth = displayWidth * 0.6;
+            const grandstandHeight = grandstandWidth * 0.4;
+            const y = groundY - grandstandHeight - 10;
+            ctx.drawImage(grandstandImage, grandstandX, y, grandstandWidth, grandstandHeight);
+        }
 
         ctx.fillStyle = '#494241';
         ctx.fillRect(0, groundY, displayWidth, displayHeight - groundY);
@@ -944,19 +1039,40 @@
             }
         }
     }
-    
+
     function spawnObstacle(x) {
-        const obstacleHeight = isMobilePortrait ? 22 : 26; 
+        const obstacleHeight = isMobilePortrait ? 22 : 26;
         const obstacleY = groundY - obstacleHeight;
 
         obstacles.push({
             x: x,
             y: obstacleY,
-            width: isMobilePortrait ? 44 : 50, 
-            height: obstacleHeight
+            width: isMobilePortrait ? 44 : 50,
+            height: obstacleHeight,
+            jumpedOver: false,
+            quote: overtakeQuotes[Math.floor(Math.random() * overtakeQuotes.length)]
         });
     }
-    
+
+    function wrapText(ctx, text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const width = ctx.measureText(currentLine + ' ' + word).width;
+            if (width < maxWidth) {
+                currentLine += ' ' + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+
     function updateObstacles(deltaTime) {
         if (gameState !== 'playing') return;
 
@@ -1018,9 +1134,44 @@
         for (let i = obstacles.length - 1; i >= 0; i--) {
             obstacles[i].x -= obstacleSpeed * (deltaTime / 1000);
             if (obstacles[i].x + obstacles[i].width < 0) {
+                activeQuotes.push({
+                    text: obstacles[i].quote,
+                    x: Math.max(100, Math.min(player.x + player.width / 2, displayWidth - 100)),
+                    y: player.y - 10,
+                    alpha: 1,
+                    floatSpeed: 20,
+                    fadeSpeed: 0.5,
+                    dx: Math.random() * 20 - 10
+                });
+
                 obstacles.splice(i, 1);
                 score += 1;
             }
+
+        }
+
+        for (let i = activeQuotes.length - 1; i >= 0; i--) {
+            const quote = activeQuotes[i];
+            quote.x += quote.dx * (deltaTime / 1000);
+            quote.y -= quote.floatSpeed * (deltaTime / 1000);
+            quote.alpha -= quote.fadeSpeed * (deltaTime / 1000);
+
+            if (quote.alpha <= 0) {
+                activeQuotes.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = Math.max(0, quote.alpha);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            ctx.strokeText(quote.text, quote.x, quote.y);
+            ctx.fillText(quote.text, quote.x, quote.y);
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -1048,6 +1199,23 @@
 
         while (deltaTimeAccumulator >= TARGET_FRAME_TIME) {
             gameTime += TARGET_FRAME_TIME;
+
+            grandstandTimer += TARGET_FRAME_TIME;
+            if (!grandstandVisible && grandstandTimer >= nextGrandstandInterval) {
+                grandstandVisible = true;
+                grandstandX = displayWidth;
+                grandstandSpeed = -displayWidth * 0.3; 
+                grandstandTimer = 0;
+                nextGrandstandInterval = 15000 + Math.random() * 5000; 
+            }
+
+            if (grandstandVisible) {
+                grandstandX += grandstandSpeed * (TARGET_FRAME_TIME / 1000);
+                if (grandstandX < -displayWidth * 0.6) {
+                    grandstandVisible = false;
+                    grandstandTimer = 0;
+                }
+            }
 
             updatePlayer(TARGET_FRAME_TIME);
             updateMaxCar(TARGET_FRAME_TIME);
@@ -1078,6 +1246,30 @@
 
                 drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height, showWarning, showPerfectZone);
             }
+
+            for (let i = activeQuotes.length - 1; i >= 0; i--) {
+                const quote = activeQuotes[i];
+                quote.x += quote.dx * (deltaTime / 1000);
+                quote.y -= quote.floatSpeed * (deltaTime / 1000);
+                quote.alpha -= quote.fadeSpeed * (deltaTime / 1000);
+
+                if (quote.alpha <= 0) {
+                    activeQuotes.splice(i, 1);
+                    continue;
+                }
+
+                ctx.globalAlpha = Math.max(0, quote.alpha);
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+
+                ctx.strokeText(quote.text, quote.x, quote.y);
+                ctx.fillText(quote.text, quote.x, quote.y);
+                ctx.globalAlpha = 1.0;
+            }
         }
 
         // Update UI
@@ -1092,6 +1284,13 @@
         gameState = 'gameOver';
         gameRunning = false;
         document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+
+        const nameInput = document.getElementById('playerNameInput');
+        nameInput.value = '';
+        nameInput.disabled = false;
+
+        renderHighScores();
+
         document.getElementById('gameOver').style.display = 'block';
         document.getElementById('speedIndicator').style.display = 'none';
     }
