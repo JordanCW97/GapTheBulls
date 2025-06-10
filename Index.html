@@ -518,12 +518,12 @@
         height: 0,
         velocityY: 0,
         grounded: false,
-        minJumpPower: -8,
-        maxJumpPower: -18,
-        gravity: 0.8,
+        minJumpPower: -300, // Much stronger jumps (pixels per second)
+        maxJumpPower: -700, // Maximum jump power
+        gravity: 1600, // Stronger gravity (pixels per second squared)
         isCharging: false,
         chargeTime: 0,
-        maxChargeTime: 800 // milliseconds
+        maxChargeTime: 400 // milliseconds
     };
 
     const maxCar = {
@@ -537,8 +537,8 @@
 
     // Red Bull obstacles - improved spawn system
     const obstacles = [];
-    let obstacleSpawnRate = 4000; // Start much slower (4 seconds between spawns)
-    let obstacleSpeed = 150; // pixels per second
+    let obstacleSpawnRate = 3000; // Start faster (3 seconds between spawns)
+    let obstacleSpeed = 400; // Much faster starting speed (was 150)
     let minObstacleGap = 0; // Will be set relative to screen width
     let lastObstacleTime = 0;
     let difficultyLevel = 0; // Track current difficulty level
@@ -547,18 +547,18 @@
     let groundY;
 
     function updateGameDimensions() {
-        // Set player size relative to screen
-        player.width = displayWidth * 0.1; // 10% of screen width
-        player.height = displayHeight * 0.067; // Maintain aspect ratio
+        // Set player size relative to screen but with more reasonable proportions
+        player.width = Math.min(80, displayWidth * 0.1); // 80px max, 10% of screen width min
+        player.height = Math.min(40, displayHeight * 0.067); // 40px max, maintain aspect ratio
         player.x = displayWidth * 0.125; // 12.5% from left edge
 
         maxCar.width = player.width;
         maxCar.height = player.height;
         maxCar.x = displayWidth * 0.225; // Start ahead of player
 
-        groundY = displayHeight * 0.833; // 83.3% down the screen
+        groundY = displayHeight - Math.min(100, displayHeight * 0.167); // 100px from bottom max
 
-        minObstacleGap = displayWidth * 0.225; // 22.5% of screen width
+        minObstacleGap = Math.max(180, displayWidth * 0.225); // 180px min gap
 
         if (!player.grounded) {
         } else {
@@ -677,10 +677,10 @@
             (wantsToCharge && !player.grounded)) {
             const chargeRatio = player.isCharging ?
                 Math.min((gameTime - chargeStartTime) / player.maxChargeTime, 1) : 0;
-            const barWidth = player.width * 0.75;
-            const barHeight = displayHeight * 0.01;
+            const barWidth = 60; // Fixed charge bar width
+            const barHeight = 6; // Fixed charge bar height
             const barX = x + (player.width - barWidth) / 2;
-            const barY = y - displayHeight * 0.025;
+            const barY = y - 15; // Fixed offset above car
 
             // Background
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -805,8 +805,8 @@
         maxCar.visible = true;
 
         obstacles.length = 0;
-        obstacleSpawnRate = 4000;
-        obstacleSpeed = displayWidth * 0.1875; // 15% of screen width per second
+        obstacleSpawnRate = 3000; // Faster spawn rate
+        obstacleSpeed = Math.max(500, displayWidth * 0.625); // Much faster starting speed
         lastObstacleTime = 0;
 
         document.getElementById('mainMenu').style.display = 'none';
@@ -821,8 +821,8 @@
     // Fixed background drawing functions with smooth scrolling (time-based)
     function drawTrees(deltaTime) {
         if (treeImageLoaded && treeImage.complete) {
-            const treeSpacing = displayWidth * 0.25; // Space between trees relative to screen
-            const scrollSpeed = displayWidth * 0.075; // Speed of tree movement per second
+            const treeSpacing = Math.max(200, displayWidth * 0.25); // 200px min spacing
+            const scrollSpeed = Math.max(200, displayWidth * 0.25); // Much faster tree scroll
 
             // Update background offset for smooth scrolling (time-based)
             backgroundOffset += scrollSpeed * (deltaTime / 1000);
@@ -835,8 +835,9 @@
                 // Use the tree position to generate a consistent but varied appearance
                 const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
                 const treeScale = 0.4 + (Math.sin(treeSeed) * 0.2);
-                const treeWidth = (displayHeight * 0.15) * treeScale; // Relative to screen height
-                const treeHeight = (displayHeight * 0.2) * treeScale;
+                const baseTreeSize = Math.min(120, displayHeight * 0.2); // 120px max tree size
+                const treeWidth = baseTreeSize * treeScale;
+                const treeHeight = baseTreeSize * treeScale;
                 const treeY = groundY - treeHeight;
 
                 ctx.drawImage(treeImage, i - treeWidth/2, treeY, treeWidth, treeHeight);
@@ -859,20 +860,19 @@
 
         // Fixed road lines with smooth scrolling (time-based)
         ctx.fillStyle = 'white';
-        const roadLineSpacing = displayWidth * 0.125;
-        const roadScrollSpeed = displayWidth * 0.375; // pixels per second
+        const roadLineSpacing = Math.max(100, displayWidth * 0.125);
+        const roadScrollSpeed = Math.max(600, displayWidth * 0.75); // Much faster road scroll
         const roadOffset = ((gameTime * roadScrollSpeed) / 1000) % roadLineSpacing;
 
-        for (let i = -roadOffset; i < displayWidth + displayWidth * 0.0625; i += roadLineSpacing) {
-            ctx.fillRect(i, groundY - displayHeight * 0.0083, displayWidth * 0.0625, displayHeight * 0.005);
+        for (let i = -roadOffset; i < displayWidth + 50; i += roadLineSpacing) {
+            ctx.fillRect(i, groundY - 5, 50, 3);
         }
     }
 
     // Update player physics with auto-charge on landing (time-based)
     function updatePlayer(deltaTime) {
-        // Apply gravity (time-based)
-        const gravityPerSecond = player.gravity * displayHeight; // Scale gravity to screen size
-        player.velocityY += gravityPerSecond * (deltaTime / 1000);
+        // Apply gravity (time-based) - scale based on actual pixels, not screen size
+        player.velocityY += player.gravity * (deltaTime / 1000);
         player.y += player.velocityY * (deltaTime / 1000);
 
         // Check for landing
@@ -896,7 +896,7 @@
     function updateMaxCar(deltaTime) {
         if (gameState === 'intro') {
             if (gameTime > 1000) { // Start moving after 1 second
-                const accelerationPerSecond = displayWidth * 0.125; // Acceleration per second
+                const accelerationPerSecond = displayWidth * 0.3; // Even faster acceleration (+20%)
                 maxCar.speed += accelerationPerSecond * (deltaTime / 1000);
                 maxCar.x += maxCar.speed * (deltaTime / 1000);
             }
@@ -921,13 +921,13 @@
             difficultyLevel = newDifficultyLevel;
 
             if (difficultyLevel <= 10) {
-                obstacleSpawnRate = Math.max(2000, 4000 - (difficultyLevel * 150));
-                obstacleSpeed = Math.min(displayWidth * 0.625, displayWidth * 0.1875 + (difficultyLevel * displayWidth * 0.03125));
-                minObstacleGap = Math.max(displayWidth * 0.175, displayWidth * 0.225 - (difficultyLevel * displayWidth * 0.00625));
+                obstacleSpawnRate = Math.max(1500, 3000 - (difficultyLevel * 120)); // Faster spawning
+                obstacleSpeed = Math.min(900, Math.max(500, displayWidth * 0.625) + (difficultyLevel * 40)); // Faster progression
+                minObstacleGap = Math.max(140, Math.max(180, displayWidth * 0.225) - (difficultyLevel * 5));
             } else {
-                obstacleSpawnRate = Math.max(1000, 2000 - ((difficultyLevel - 10) * 50));
-                obstacleSpeed = Math.min(displayWidth * 0.875, displayWidth * 0.625 + ((difficultyLevel - 10) * displayWidth * 0.025));
-                minObstacleGap = Math.max(displayWidth * 0.15, displayWidth * 0.175 - ((difficultyLevel - 10) * displayWidth * 0.00625));
+                obstacleSpawnRate = Math.max(800, 1500 - ((difficultyLevel - 10) * 60)); // Very fast spawning
+                obstacleSpeed = Math.min(1400, 900 + ((difficultyLevel - 10) * 50)); // Very fast speed
+                minObstacleGap = Math.max(120, 140 - ((difficultyLevel - 10) * 2));
             }
         }
 
@@ -939,9 +939,9 @@
             if (canSpawn) {
                 obstacles.push({
                     x: displayWidth,
-                    y: groundY - player.height * 0.875,
-                    width: player.width * 0.875,
-                    height: player.height * 0.875
+                    y: groundY - 35, // Fixed obstacle height
+                    width: 70, // Fixed obstacle width  
+                    height: 35 // Fixed obstacle height
                 });
                 lastObstacleTime = gameTime;
             }
