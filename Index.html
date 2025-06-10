@@ -558,6 +558,10 @@
     }
 
     function submitHighScore() {
+        if(score <= 0){
+            return;
+        }
+        
         const nameInput = document.getElementById('playerNameInput');
         const playerName = nameInput.value.trim() || 'Anonymous';
 
