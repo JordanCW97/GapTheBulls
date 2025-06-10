@@ -945,19 +945,19 @@
             }
         }
     }
-
+    
     function spawnObstacle(x) {
-        const obstacleHeight = isMobilePortrait ? 26 : 30; 
+        const obstacleHeight = isMobilePortrait ? 22 : 26; 
         const obstacleY = groundY - obstacleHeight;
 
         obstacles.push({
             x: x,
             y: obstacleY,
-            width: isMobilePortrait ? 52 : 60, 
+            width: isMobilePortrait ? 44 : 50, 
             height: obstacleHeight
         });
     }
-
+    
     function updateObstacles(deltaTime) {
         if (gameState !== 'playing') return;
 
