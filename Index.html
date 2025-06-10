@@ -584,9 +584,9 @@
 
     function updateGameDimensions() {
         if (isMobilePortrait) {
-            player.width = Math.min(60, displayWidth * 0.12);
-            player.height = Math.min(30, displayHeight * 0.04);
-            player.x = displayWidth * 0.2; 
+            player.width = Math.min(50, displayWidth * 0.09); 
+            player.height = Math.min(25, displayHeight * 0.035);
+            player.x = displayWidth * 0.15; 
 
             warningZone = displayWidth * 0.6; 
             perfectJumpZone = displayWidth * 0.4; 
@@ -607,7 +607,7 @@
         maxCar.x = displayWidth * 0.225;
 
         groundY = displayHeight - Math.min(100, displayHeight * 0.167);
-        minObstacleGap = Math.max(isMobilePortrait ? 140 : 120, displayWidth * 0.15);
+        minObstacleGap = Math.max(120, displayWidth * 0.18); 
 
         if (!player.grounded) {
         } else {
@@ -857,6 +857,7 @@
         document.getElementById('instructions').style.display = 'none';
         document.getElementById('introText').style.display = 'block';
 
+        lastObstacleTime = gameTime + 1000; 
         requestAnimationFrame(gameLoop);
     }
 
