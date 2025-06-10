@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>McLaren vs Red Bull Runner</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px;
+            max-height: 600px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 70%, #228B22 100%);
+            overflow: hidden;
+            border: 3px solid #ff6600;
+            box-shadow: 0 0 30px rgba(255, 102, 0, 0.5);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+
+        .ui {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        #score {
+            top: 20px;
+            left: 70px;
+            font-size: 24px;
+        }
+
+        #audioToggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #ff6600;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 15;
+            user-select: none;
+        }
+
+        #audioToggle:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        #audioToggle.muted {
+            color: #ff6666;
+            border-color: #ff6666;
+        }
+
+        #instructions {
+            top: 20px;
+            right: 20px;
+            font-size: 16px;
+            text-align: right;
+        }
+
+        #introText {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            text-align: center;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+        }
+
+        #mainMenu, #howToPlay, #credits {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 30;
+            border: 2px solid #ff6600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        #mainMenu {
+            display: flex;
+        }
+
+        #howToPlay, #credits {
+            display: none;
+            flex-direction: column;
+        }
+
+        .menu-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .driver-image {
+            width: 120px;
+            height: auto;
+            opacity: 0.9;
+        }
+
+        .driver-image.lando {
+            align-self: flex-start;
+        }
+
+        .driver-image.max {
+            align-self: flex-end;
+        }
+
+        .menu-title {
+            color: #ff6600;
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .menu-button {
+            background: #ff6600;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+        }
+
+        .menu-button:hover {
+            background: #e55a00;
+        }
+
+        .back-button {
+            background: #666;
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background: #555;
+        }
+
+        .menu-content {
+            color: white;
+            line-height: 1.6;
+            text-align: left;
+            max-width: 400px;
+        }
+
+        .menu-content h3 {
+            color: #ff6600;
+            text-align: center;
+        }
+
+        #gameOver h2 {
+            color: #ff6600;
+            margin-top: 0;
+            font-size: 28px;
+        }
+        #gameOver p {
+            color: #ffffff;
+        }
+
+        #gameOver button {
+            background: #ff6600;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+
+        #gameOver button:hover {
+            background: #e55a00;
+        }
+
+        .road-line {
+            position: absolute;
+            width: 60px;
+            height: 4px;
+            background: white;
+            bottom: 150px;
+            animation: roadMove 1s linear infinite;
+        }
+
+        @keyframes roadMove {
+            from { right: -60px; }
+            to { right: 100%; }
+        }
+
+        @media (max-width: 768px) {
+            #score, #instructions {
+                font-size: 18px;
+            }
+
+            #gameOver h2 {
+                font-size: 24px;
+            }
+
+            #gameOver button {
+                font-size: 16px;
+                padding: 10px 20px;
+            }
+
+            #audioToggle {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+
+            #score {
+                left: 65px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Audio Toggle Button -->
+    <div id="audioToggle" onclick="toggleAudio()" title="Toggle Audio">🔊</div>
+
+    <div id="score" class="ui">Championship points: 0</div>
+    <div id="instructions" class="ui">
+        Hold to Jump Higher<br>
+        Gap the Red Bull second drivers<br>
+        but never quite catch Max!
+    </div>
+
+    <div id="introText" class="ui">
+        Max is pulling away!
+    </div>
+
+    <div id="mainMenu">
+        <img id="landoImg" class="driver-image lando" style="display: none;">
+        <div class="menu-center">
+            <h1 class="menu-title">Gap The Bulls</h1>
+            <button class="menu-button" onclick="startGame()">Play</button>
+            <button class="menu-button" onclick="showHowToPlay()">How to Play</button>
+            <button class="menu-button" onclick="showCredits()">Credits</button>
+        </div>
+        <img id="maxImg" class="driver-image max" style="display: none;">
+    </div>
+
+    <div id="howToPlay">
+        <h1 class="menu-title">How to Play</h1>
+        <div class="menu-content">
+            <h3>Objective:</h3>
+            <p>Help McLaren gap the Red Bull second drivers, but you'll never quite catch Max Verstappen!</p>
+
+            <h3>Controls:</h3>
+            <p>• Hold Click/Tap for higher jumps</p>
+            <p>• Quick tap for small hops</p>
+            <p>• Watch the charge bar above your car!</p>
+
+            <h3>Gameplay:</h3>
+            <p>• Jump over Red Bull cars to earn championship points</p>
+            <p>• The game gets faster and more challenging as you progress</p>
+            <p>• Don't crash into the Red Bull cars!</p>
+        </div>
+        <button class="menu-button back-button" onclick="showMainMenu()">Back</button>
+    </div>
+
+    <div id="credits">
+        <h1 class="menu-title">Credits</h1>
+        <div class="menu-content">
+            <h3>Game Development:</h3>
+            <p>Jordan Carter-Wightwick</p>
+
+            <h3>Inspired by:</h3>
+            <p>Charlotte's poor choice in F1 teams.</p>
+
+            <h3>Special Thanks:</h3>
+            <p>To all F1 fans who know the pain of watching Max dominate the sport!</p>
+
+            <h3>Remember:</h3>
+            <p>"It's lights out and away we go!" 🏁</p>
+        </div>
+        <button class="menu-button back-button" onclick="showMainMenu()">Back</button>
+    </div>
+
+    <div id="gameOver">
+        <h2>Game Over!</h2>
+        <p>Oops! Max made McLaren look bad again!</p>
+        <p id="finalScore">Final Score: 0</p>
+        <button onclick="restartGame()">Try Again</button>
+        <button class="back-button" onclick="showMainMenu()" style="margin-left: 10px;">Main Menu</button>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="backgroundMusic" loop>
+        <source src="./Resources/Audio/theme.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Audio setup
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    const audioToggle = document.getElementById('audioToggle');
+    let isAudioMuted = false;
+    let audioInitialized = false;
+
+    // Set initial volume
+    backgroundMusic.volume = 0.3; // 30% volume to not be too loud
+
+    // Function to initialize and start audio (needed for browser autoplay policies)
+    function initializeAudio() {
+        if (!audioInitialized && !isAudioMuted) {
+            backgroundMusic.play().then(() => {
+                audioInitialized = true;
+                console.log('Audio initialized and playing successfully');
+            }).catch(error => {
+                console.log('Audio initialization failed:', error);
+                // Try again on next user interaction
+            });
+        }
+    }
+
+    // Function to start audio if it's not muted
+    function startAudio() {
+        if (!isAudioMuted) {
+            if (!audioInitialized) {
+                initializeAudio();
+            } else {
+                backgroundMusic.play().catch(error => {
+                    console.log('Failed to play audio:', error);
+                });
+            }
+        }
+    }
+
+    // Toggle audio function
+    function toggleAudio() {
+        if (!audioInitialized) {
+            initializeAudio();
+        }
+
+        isAudioMuted = !isAudioMuted;
+
+        if (isAudioMuted) {
+            backgroundMusic.pause();
+            audioToggle.textContent = '🔇';
+            audioToggle.classList.add('muted');
+            audioToggle.title = 'Unmute Audio';
+        } else {
+            backgroundMusic.play().catch(error => {
+                console.log('Failed to play audio:', error);
+            });
+            audioToggle.textContent = '🔊';
+            audioToggle.classList.remove('muted');
+            audioToggle.title = 'Mute Audio';
+        }
+    }
+
+    // Set canvas size
+    function resizeCanvas() {
+        const container = document.getElementById('gameContainer');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Game state
+    let gameState = 'menu'; // 'menu', 'intro', 'playing', 'gameOver'
+    let gameRunning = false;
+    let score = 0;
+    let frameCount = 0;
+    let lastTime = 0;
+    let introTimer = 0;
+    const introDelay = 600; // 10 seconds at 60fps
+
+    // Background scrolling offset for smooth movement
+    let backgroundOffset = 0;
+
+    // Input tracking for seamless jump chaining
+    let isInputDown = false;
+    let chargeStartTime = 0;
+    let wantsToCharge = false; // New flag for input buffering
+
+    // McLaren player with variable jump
+    const player = {
+        x: 100,
+        y: 0,
+        width: 80,
+        height: 40,
+        velocityY: 0,
+        grounded: false,
+        minJumpPower: -5,
+        maxJumpPower: -13,
+        gravity: 0.2,
+        isCharging: false,
+        chargeTime: 0,
+        maxChargeFrames: 40
+    };
+
+    const maxCar = {
+        x: 180,
+        y: 0,
+        width: 80,
+        height: 40,
+        speed: 0,
+        visible: false
+    };
+
+    // Red Bull obstacles - improved spawn system
+    const obstacles = [];
+    let obstacleSpawnRate = 240; // Start much slower (4 seconds between spawns)
+    let obstacleSpeed = 2.5; // Start slower
+    let minObstacleGap = 180; // Minimum gap between obstacles
+    let lastObstacleX = 0; // Track last obstacle position
+    let difficultyLevel = 0; // Track current difficulty level
+
+    // Ground level
+    let groundY;
+
+    function updateGroundY() {
+        groundY = canvas.height - 100;
+        if (!player.grounded) {
+        } else {
+            player.y = groundY - player.height;
+        }
+        maxCar.y = groundY - maxCar.height;
+    }
+
+    // Image loading code remains the same...
+    const treeImage = new Image();
+    let treeImageLoaded = false;
+    treeImage.onload = function() { treeImageLoaded = true; };
+    treeImage.onerror = function() { treeImageLoaded = false; };
+    treeImage.src = './Resources/Sprites/tree_cartoon_med.png';
+
+    const mclarenImage = new Image();
+    const redBullImage = new Image();
+    let mclarenImageLoaded = false;
+    let redBullImageLoaded = false;
+    mclarenImage.onload = function() { mclarenImageLoaded = true; };
+    mclarenImage.onerror = function() { mclarenImageLoaded = false; };
+    redBullImage.onload = function() { redBullImageLoaded = true; };
+    redBullImage.onerror = function() { redBullImageLoaded = false; };
+    mclarenImage.src = './Resources/Sprites/MCL.png';
+    redBullImage.src = './Resources/Sprites/RB.png';
+
+    const landoImage = new Image();
+    const maxImage = new Image();
+    let landoImageLoaded = false;
+    let maxImageLoaded = false;
+    landoImage.onload = function() { landoImageLoaded = true; updateDriverImages(); };
+    landoImage.onerror = function() { landoImageLoaded = false; };
+    maxImage.onload = function() { maxImageLoaded = true; updateDriverImages(); };
+    maxImage.onerror = function() { maxImageLoaded = false; };
+    landoImage.src = './Resources/Sprites/Lando.png';
+    maxImage.src = './Resources/Sprites/Max.png';
+
+    function updateDriverImages() {
+        if (gameState === 'menu') {
+            if (landoImageLoaded) {
+                const landoImg = document.getElementById('landoImg');
+                landoImg.src = landoImage.src;
+                landoImg.style.display = 'block';
+            }
+            if (maxImageLoaded) {
+                const maxImg = document.getElementById('maxImg');
+                maxImg.src = maxImage.src;
+                maxImg.style.display = 'block';
+            }
+        }
+    }
+
+    // Enhanced jump system with input buffering
+    function startCharging() {
+        wantsToCharge = true;
+        // Immediately start charging if already grounded
+        if (player.grounded && !player.isCharging) {
+            player.isCharging = true;
+            player.chargeTime = 0;
+        }
+    }
+
+    function stopCharging() {
+        wantsToCharge = false;
+        player.isCharging = false;
+        player.chargeTime = 0;
+    }
+
+    function executeJump() {
+        if (player.isCharging && player.grounded) {
+            const chargeRatio = Math.min(player.chargeTime / player.maxChargeFrames, 1);
+            const jumpPower = player.minJumpPower + (player.maxJumpPower - player.minJumpPower) * chargeRatio;
+
+            player.velocityY = jumpPower;
+            player.grounded = false;
+            player.isCharging = false;
+            player.chargeTime = 0;
+
+            // Ensure we're slightly off the ground to prevent immediate re-grounding
+            if (player.y >= groundY - player.height) {
+                player.y = groundY - player.height - 1;
+            }
+
+            // Keep wantsToCharge true if input is still held
+            // This will trigger auto-charge on next landing
+        }
+    }
+
+    // Draw McLaren with charge indicator
+    function drawMcLaren(x, y) {
+        if (mclarenImageLoaded && mclarenImage.complete) {
+            const spriteAspectRatio = mclarenImage.width / mclarenImage.height;
+            const scaledWidth = player.height * spriteAspectRatio;
+            ctx.drawImage(mclarenImage, x, y, scaledWidth, player.height);
+        } else {
+            // Fallback
+            ctx.fillStyle = '#ff6600';
+            ctx.fillRect(x, y, player.width, player.height);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + 5, y + 5, 15, 8);
+            ctx.fillRect(x + 60, y + 5, 15, 8);
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.arc(x + 15, y + player.height, 8, 0, Math.PI * 2);
+            ctx.arc(x + 65, y + player.height, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.fillText('MCL', x + 25, y + 25);
+        }
+
+        // Draw charge indicator (show when charging OR wanting to charge)
+        if ((player.isCharging && (player.grounded || player.velocityY >= 0)) ||
+            (wantsToCharge && !player.grounded)) {
+            const chargeRatio = player.isCharging ?
+                Math.min(player.chargeTime / player.maxChargeFrames, 1) : 0;
+            const barWidth = 60;
+            const barHeight = 6;
+            const barX = x + (player.width - barWidth) / 2;
+            const barY = y - 15;
+
+            // Background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            // Charge bar or ready indicator
+            if (player.isCharging) {
+                const chargeWidth = barWidth * chargeRatio;
+                if (chargeRatio < 0.5) {
+                    ctx.fillStyle = '#00ff00';
+                } else if (chargeRatio < 0.8) {
+                    ctx.fillStyle = '#ffff00';
+                } else {
+                    ctx.fillStyle = '#ff0000';
+                }
+                ctx.fillRect(barX, barY, chargeWidth, barHeight);
+            } else if (wantsToCharge) {
+                // Show "ready to charge" indicator
+                ctx.fillStyle = '#00ffff'; // Cyan to indicate ready state
+                ctx.fillRect(barX, barY, barWidth * 0.1, barHeight);
+            }
+
+            // Border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barWidth, barHeight);
+        }
+    }
+
+    // Draw Red Bull cars (keeping existing functions)
+    function drawRedBull(x, y, width, height) {
+        if (redBullImageLoaded && redBullImage.complete) {
+            const spriteAspectRatio = redBullImage.width / redBullImage.height;
+            const scaledWidth = height * spriteAspectRatio;
+            ctx.drawImage(redBullImage, x, y, scaledWidth, height);
+        } else {
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillRect(x, y, width, height);
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(x + 5, y + 5, 12, 6);
+            ctx.fillRect(x + width - 17, y + 5, 12, 6);
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.arc(x + 12, y + height, 6, 0, Math.PI * 2);
+            ctx.arc(x + width - 12, y + height, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = '10px Arial';
+            ctx.fillText('RB', x + width/2 - 8, y + height/2 + 3);
+        }
+    }
+
+    function drawMaxRedBull(x, y, width, height) {
+        if (redBullImageLoaded && redBullImage.complete) {
+            const spriteAspectRatio = redBullImage.width / redBullImage.height;
+            const scaledWidth = height * spriteAspectRatio;
+            ctx.drawImage(redBullImage, x, y, scaledWidth, height);
+        } else {
+            ctx.fillStyle = '#1e3a8a';
+            ctx.fillRect(x, y, width, height);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(x + 5, y + 5, 12, 6);
+            ctx.fillRect(x + width - 17, y + 5, 12, 6);
+            ctx.fillStyle = '#333333';
+            ctx.beginPath();
+            ctx.arc(x + 12, y + height, 6, 0, Math.PI * 2);
+            ctx.arc(x + width - 12, y + height, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '10px Arial';
+            ctx.fillText('MV', x + width/2 - 8, y + height/2 + 3);
+        }
+    }
+
+    // Menu functions
+    function showMainMenu() {
+        gameState = 'menu';
+        gameRunning = false;
+        document.getElementById('mainMenu').style.display = 'flex';
+        document.getElementById('howToPlay').style.display = 'none';
+        document.getElementById('credits').style.display = 'none';
+        document.getElementById('gameOver').style.display = 'none';
+        document.getElementById('score').style.display = 'none';
+        document.getElementById('instructions').style.display = 'none';
+        document.getElementById('introText').style.display = 'none';
+        updateDriverImages();
+    }
+
+    function showHowToPlay() {
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('howToPlay').style.display = 'block';
+    }
+
+    function showCredits() {
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('credits').style.display = 'block';
+    }
+
+    function startGame() {
+        startAudio();
+
+        gameState = 'intro';
+        gameRunning = true;
+        score = 0;
+        frameCount = 0;
+        introTimer = 0;
+        difficultyLevel = 0;
+        backgroundOffset = 0; // Reset background scroll position
+
+        player.y = groundY - player.height;
+        player.velocityY = 0;
+        player.grounded = true;
+        player.isCharging = false;
+        player.chargeTime = 0;
+
+        maxCar.x = 180;
+        maxCar.speed = 0;
+        maxCar.visible = true;
+
+        obstacles.length = 0;
+        obstacleSpawnRate = 240;
+        obstacleSpeed = 2.5;
+        lastObstacleX = 0;
+
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('gameOver').style.display = 'none';
+        document.getElementById('score').style.display = 'block';
+        document.getElementById('instructions').style.display = 'none';
+        document.getElementById('introText').style.display = 'block';
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Fixed background drawing functions with smooth scrolling
+    function drawTrees() {
+        if (treeImageLoaded && treeImage.complete) {
+            const treeSpacing = 200; // Space between trees
+            const scrollSpeed = 1.5; // Speed of tree movement
+
+            // Update background offset for smooth scrolling
+            backgroundOffset += scrollSpeed;
+
+            // Calculate the starting position to ensure seamless wrapping
+            const startX = -(backgroundOffset % treeSpacing);
+
+            // Draw trees across the screen with some extra on both sides
+            for (let i = startX - treeSpacing; i < canvas.width + treeSpacing; i += treeSpacing) {
+                // Use the tree position to generate a consistent but varied appearance
+                const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
+                const treeScale = 0.4 + (Math.sin(treeSeed) * 0.2);
+                const treeWidth = treeImage.width * treeScale;
+                const treeHeight = treeImage.height * treeScale;
+                const treeY = groundY - treeHeight;
+
+                ctx.drawImage(treeImage, i - treeWidth/2, treeY, treeWidth, treeHeight);
+            }
+        }
+    }
+
+    function drawBackground() {
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#87CEEB');
+        gradient.addColorStop(0.7, '#98FB98');
+        gradient.addColorStop(1, '#228B22');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawTrees();
+
+        ctx.fillStyle = '#494241';
+        ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+        // Fixed road lines with smooth scrolling
+        ctx.fillStyle = 'white';
+        const roadLineSpacing = 100;
+        const roadScrollSpeed = 3;
+        const roadOffset = (frameCount * roadScrollSpeed) % roadLineSpacing;
+
+        for (let i = -roadOffset; i < canvas.width + 50; i += roadLineSpacing) {
+            ctx.fillRect(i, groundY - 5, 50, 3);
+        }
+    }
+
+    // Update player physics with auto-charge on landing
+    function updatePlayer() {
+        updateGroundY();
+
+        // Apply gravity first
+        player.velocityY += player.gravity;
+        player.y += player.velocityY;
+
+        // Check for landing
+        const wasGrounded = player.grounded;
+        if (player.y >= groundY - player.height) {
+            player.y = groundY - player.height;
+            player.velocityY = 0;
+            player.grounded = true;
+
+            // Auto-start charging if player wants to charge and just landed
+            if (!wasGrounded && wantsToCharge && !player.isCharging) {
+                player.isCharging = true;
+                player.chargeTime = 0;
+            }
+        } else {
+            player.grounded = false;
+        }
+
+        // Update charge time when actively charging
+        if (player.isCharging && player.grounded) {
+            player.chargeTime++;
+        }
+    }
+
+    // Update Max's car during intro
+    function updateMaxCar() {
+        if (gameState === 'intro') {
+            introTimer++;
+            if (introTimer > 60) {
+                maxCar.speed += 0.1;
+                maxCar.x += maxCar.speed;
+            }
+            if (maxCar.x > canvas.width + 100) {
+                maxCar.visible = false;
+            }
+            if (introTimer >= introDelay) {
+                gameState = 'playing';
+                document.getElementById('introText').style.display = 'none';
+                document.getElementById('instructions').style.display = 'block';
+            }
+        }
+    }
+
+    // Update obstacles with improved spawning logic
+    function updateObstacles() {
+        if (gameState !== 'playing') return;
+
+        const newDifficultyLevel = Math.floor(score / 5);
+
+        if (newDifficultyLevel > difficultyLevel) {
+            difficultyLevel = newDifficultyLevel;
+
+            if (difficultyLevel <= 10) {
+                obstacleSpawnRate = Math.max(120, 240 - (difficultyLevel * 8));
+                obstacleSpeed = Math.min(5, 2.5 + (difficultyLevel * 0.15));
+                minObstacleGap = Math.max(140, 180 - (difficultyLevel * 3));
+            } else {
+                obstacleSpawnRate = Math.max(60, 120 - ((difficultyLevel - 10) * 3));
+                obstacleSpeed = Math.min(7, 5 + ((difficultyLevel - 10) * 0.1));
+                minObstacleGap = Math.max(120, 140 - ((difficultyLevel - 10) * 2));
+            }
+        }
+
+        if (frameCount % obstacleSpawnRate === 0) {
+            const canSpawn = obstacles.length === 0 ||
+                (canvas.width - obstacles[obstacles.length - 1].x) >= minObstacleGap;
+
+            if (canSpawn) {
+                obstacles.push({
+                    x: canvas.width,
+                    y: groundY - 35,
+                    width: 70,
+                    height: 35
+                });
+                lastObstacleX = canvas.width;
+            }
+        }
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            obstacles[i].x -= obstacleSpeed;
+            if (obstacles[i].x + obstacles[i].width < 0) {
+                obstacles.splice(i, 1);
+                score += 1;
+            }
+        }
+    }
+
+    // Collision detection
+    function checkCollisions() {
+        if (gameState !== 'playing') return;
+        for (let obstacle of obstacles) {
+            if (player.x < obstacle.x + obstacle.width &&
+                player.x + player.width > obstacle.x &&
+                player.y < obstacle.y + obstacle.height &&
+                player.y + player.height > obstacle.y) {
+                gameRunning = false;
+                showGameOver();
+                return;
+            }
+        }
+    }
+
+    // Game loop
+    function gameLoop(currentTime) {
+        if (!gameRunning) return;
+
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        frameCount++;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawBackground();
+        drawMcLaren(player.x, player.y);
+
+        if (gameState === 'intro' && maxCar.visible) {
+            drawMaxRedBull(maxCar.x, maxCar.y, maxCar.width, maxCar.height);
+        }
+
+        if (gameState === 'playing') {
+            for (let obstacle of obstacles) {
+                drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+        }
+
+        updatePlayer();
+        updateMaxCar();
+        updateObstacles();
+        checkCollisions();
+
+        document.getElementById('score').textContent = `Championship points: ${score}`;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function showGameOver() {
+        gameState = 'gameOver';
+        gameRunning = false;
+        document.getElementById('finalScore').textContent = `Final Score: ${score}`;
+        document.getElementById('gameOver').style.display = 'block';
+    }
+
+    function restartGame() {
+        startGame();
+    }
+
+    // Enhanced event listeners with input buffering
+    canvas.addEventListener('mousedown', () => {
+        if (gameState === 'playing') {
+            startCharging();
+        }
+        // Initialize audio on first interaction
+        if (!audioInitialized && !isAudioMuted) {
+            initializeAudio();
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        if (gameState === 'playing') {
+            executeJump();
+            stopCharging();
+        }
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (gameState === 'playing') {
+            startCharging();
+        }
+        // Initialize audio on first interaction
+        if (!audioInitialized && !isAudioMuted) {
+            initializeAudio();
+        }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (gameState === 'playing') {
+            executeJump();
+            stopCharging();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !isInputDown) {
+            e.preventDefault();
+            if (gameState === 'playing') {
+                isInputDown = true;
+                startCharging();
+            }
+            // Initialize audio on first interaction
+            if (!audioInitialized && !isAudioMuted) {
+                initializeAudio();
+            }
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space' && isInputDown) {
+            e.preventDefault();
+            if (gameState === 'playing') {
+                isInputDown = false;
+                executeJump();
+                stopCharging();
+            }
+        }
+    });
+
+    // Audio event listeners
+    backgroundMusic.addEventListener('canplaythrough', () => {
+        console.log('Audio is ready to play');
+    });
+
+    backgroundMusic.addEventListener('error', (e) => {
+        console.log('Audio loading error:', e);
+    });
+
+    // Start with main menu
+    updateGroundY();
+    player.y = groundY - player.height;
+    player.grounded = true;
+    showMainMenu();
+</script>
+</body>
+</html>
