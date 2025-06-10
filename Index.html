@@ -42,7 +42,7 @@
             position: absolute;
             color: white;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             z-index: 10;
         }
 
@@ -103,7 +103,7 @@
             transform: translate(-50%, -50%);
             font-size: 24px;
             text-align: center;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 10px;
             display: none;
@@ -214,7 +214,7 @@
             color: #ff6600;
             font-size: 36px;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .menu-title-image {
@@ -275,6 +275,7 @@
             margin-top: 0;
             font-size: 28px;
         }
+
         #gameOver p {
             color: #ffffff;
         }
@@ -306,8 +307,12 @@
         }
 
         @keyframes roadMove {
-            from { right: -60px; }
-            to { right: 100%; }
+            from {
+                right: -60px;
+            }
+            to {
+                right: 100%;
+            }
         }
 
         @media (max-width: 768px) and (orientation: portrait) {
@@ -558,16 +563,16 @@
     }
 
     function submitHighScore() {
-        if(score <= 0){
+        if (score <= 0) {
             return;
         }
-        
+
         const nameInput = document.getElementById('playerNameInput');
         const playerName = nameInput.value.trim() || 'Anonymous';
 
         fetch('https://gap-the-bulls-api.onrender.com/api/scores', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: playerName,
                 score: score
@@ -599,7 +604,7 @@
                 const scores = data.data;
 
                 scores
-                    .sort((a, b) => b.score - a.score) 
+                    .sort((a, b) => b.score - a.score)
                     .slice(0, 5)
                     .forEach(entry => {
                         const row = document.createElement('tr');
@@ -686,9 +691,9 @@
     let grandstandVisible = true;
     let grandstandX = 0;
     let grandstandSpeed = 0;
-    const grandstandInterval = 15000 + Math.random() * 5000; 
+    const grandstandInterval = 15000 + Math.random() * 5000;
 
-    let warningZone = 0; 
+    let warningZone = 0;
     let perfectJumpZone = 0;
 
     const overtakeQuotes = [
@@ -748,18 +753,30 @@
 
     const treeImage = new Image();
     let treeImageLoaded = false;
-    treeImage.onload = function() { treeImageLoaded = true; };
-    treeImage.onerror = function() { treeImageLoaded = false; };
+    treeImage.onload = function () {
+        treeImageLoaded = true;
+    };
+    treeImage.onerror = function () {
+        treeImageLoaded = false;
+    };
     treeImage.src = './Resources/Sprites/tree_cartoon_med.png';
 
     const mclarenImage = new Image();
     const redBullImage = new Image();
     let mclarenImageLoaded = false;
     let redBullImageLoaded = false;
-    mclarenImage.onload = function() { mclarenImageLoaded = true; };
-    mclarenImage.onerror = function() { mclarenImageLoaded = false; };
-    redBullImage.onload = function() { redBullImageLoaded = true; };
-    redBullImage.onerror = function() { redBullImageLoaded = false; };
+    mclarenImage.onload = function () {
+        mclarenImageLoaded = true;
+    };
+    mclarenImage.onerror = function () {
+        mclarenImageLoaded = false;
+    };
+    redBullImage.onload = function () {
+        redBullImageLoaded = true;
+    };
+    redBullImage.onerror = function () {
+        redBullImageLoaded = false;
+    };
     mclarenImage.src = './Resources/Sprites/MCL.png';
     redBullImage.src = './Resources/Sprites/RB.png';
 
@@ -773,10 +790,20 @@
     const maxImage = new Image();
     let landoImageLoaded = false;
     let maxImageLoaded = false;
-    landoImage.onload = function() { landoImageLoaded = true; updateDriverImages(); };
-    landoImage.onerror = function() { landoImageLoaded = false; };
-    maxImage.onload = function() { maxImageLoaded = true; updateDriverImages(); };
-    maxImage.onerror = function() { maxImageLoaded = false; };
+    landoImage.onload = function () {
+        landoImageLoaded = true;
+        updateDriverImages();
+    };
+    landoImage.onerror = function () {
+        landoImageLoaded = false;
+    };
+    maxImage.onload = function () {
+        maxImageLoaded = true;
+        updateDriverImages();
+    };
+    maxImage.onerror = function () {
+        maxImageLoaded = false;
+    };
     landoImage.src = './Resources/Sprites/Lando.png';
     maxImage.src = './Resources/Sprites/Max.png';
 
@@ -826,108 +853,72 @@
         }
     }
 
-    function drawMcLaren(x, y) {
-        if (mclarenImageLoaded && mclarenImage.complete) {
-            const spriteAspectRatio = mclarenImage.width / mclarenImage.height;
-            const scaledWidth = player.height * spriteAspectRatio;
-            ctx.drawImage(mclarenImage, x, y, scaledWidth, player.height);
+    function cartoonyBounce(t, phase = 0) {
+        return Math.sin(t / 130 + phase) * Math.exp(-Math.abs(Math.cos(t / 300 + phase))) * 2.5;
+    }
+
+    function drawCar({image, x, y, width, height, bounce = true, label = '', labelColor = 'white'}) {
+        if (image && image.complete) {
+            const spriteAspectRatio = image.width / image.height;
+            const scaledWidth = height * spriteAspectRatio;
+
+            if (bounce) {
+                const bounceOffset = cartoonyBounce(performance.now(), x * 0.01);
+                ctx.drawImage(image, x, y + bounceOffset, scaledWidth, height);
+
+                const scaleY = 1 + Math.sin((performance.now() + x * 7) / 100) * 0.03;
+                ctx.save();
+                ctx.translate(x + scaledWidth / 2, y + height / 2);
+                ctx.scale(1, scaleY);
+                ctx.drawImage(image, -scaledWidth / 2, -height / 2, scaledWidth, height);
+                ctx.restore();
+            } else {
+                ctx.drawImage(image, x, y, scaledWidth, height);
+            }
         } else {
-            ctx.fillStyle = '#ff6600';
-            ctx.fillRect(x, y, player.width, player.height);
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(x + player.width * 0.0625, y + player.height * 0.125, player.width * 0.1875, player.height * 0.2);
-            ctx.fillRect(x + player.width * 0.75, y + player.height * 0.125, player.width * 0.1875, player.height * 0.2);
+            ctx.fillStyle = labelColor === 'gold' ? '#FFD700' : (label === 'MCL' ? '#ff6600' : '#1e3a8a');
+            ctx.fillRect(x, y, width, height);
+
+            const accentColor = label === 'MCL' ? '#000000' : (labelColor === 'gold' ? '#FFD700' : '#dc2626');
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(x + width * 0.0625, y + height * 0.125, width * 0.1875, height * 0.2);
+            ctx.fillRect(x + width * 0.75, y + height * 0.125, width * 0.1875, height * 0.2);
+
             ctx.fillStyle = '#333333';
             ctx.beginPath();
-            const wheelRadius = player.height * 0.2;
-            ctx.arc(x + player.width * 0.1875, y + player.height, wheelRadius, 0, Math.PI * 2);
-            ctx.arc(x + player.width * 0.8125, y + player.height, wheelRadius, 0, Math.PI * 2);
+            const wheelRadius = height * 0.2;
+            ctx.arc(x + width * 0.1875, y + height, wheelRadius, 0, Math.PI * 2);
+            ctx.arc(x + width * 0.8125, y + height, wheelRadius, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = 'white';
-            ctx.font = `${player.height * 0.3}px Arial`;
-            ctx.fillText('MCL', x + player.width * 0.3125, y + player.height * 0.625);
+
+            if (label) {
+                ctx.fillStyle = labelColor;
+                ctx.font = `${height * 0.3}px Arial`;
+                const textWidth = ctx.measureText(label).width;
+                ctx.fillText(label, x + (width - textWidth) / 2, y + height * 0.625);
+            }
         }
 
-        if ((player.isCharging && (player.grounded || player.velocityY >= 0)) ||
-            (wantsToCharge && !player.grounded)) {
-            const chargeRatio = player.isCharging ?
-                Math.min((gameTime - chargeStartTime) / player.maxChargeTime, 1) : 0;
-            const barWidth = isMobilePortrait ? 50 : 60;
-            const barHeight = isMobilePortrait ? 5 : 6;
-            const barX = x + (player.width - barWidth) / 2;
-            const barY = y - (isMobilePortrait ? 12 : 15);
+        if (label === 'MCL' && player.isCharging) {
+            const barWidth = width;
+            const barHeight = 6;
+            const chargeTime = gameTime - chargeStartTime;
+            const chargeRatio = Math.min(chargeTime / player.maxChargeTime, 1);
 
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            const barX = x;
+            const barY = y - barHeight - 4;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             ctx.fillRect(barX, barY, barWidth, barHeight);
 
-            if (player.isCharging) {
-                const chargeWidth = barWidth * chargeRatio;
-                if (chargeRatio < 0.5) {
-                    ctx.fillStyle = '#00ff00';
-                } else if (chargeRatio < 0.8) {
-                    ctx.fillStyle = '#ffff00';
-                } else {
-                    ctx.fillStyle = '#ff0000';
-                }
-                ctx.fillRect(barX, barY, chargeWidth, barHeight);
-            } else if (wantsToCharge) {
-                ctx.fillStyle = '#00ffff';
-                ctx.fillRect(barX, barY, barWidth * 0.1, barHeight);
-            }
-
+            ctx.fillStyle = '#ff6600';
+            ctx.fillRect(barX, barY, barWidth * chargeRatio, barHeight);
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 1;
             ctx.strokeRect(barX, barY, barWidth, barHeight);
         }
     }
 
-    function drawRedBull(x, y, width, height, showWarning = false, showPerfectZone = false) {
-        if (redBullImageLoaded && redBullImage.complete) {
-            const spriteAspectRatio = redBullImage.width / redBullImage.height;
-            const scaledWidth = height * spriteAspectRatio;
-            ctx.drawImage(redBullImage, x, y, scaledWidth, height);
-        } else {
-            ctx.fillStyle = '#1e3a8a';
-            ctx.fillRect(x, y, width, height);
-            ctx.fillStyle = '#dc2626';
-            ctx.fillRect(x + width * 0.0714, y + height * 0.125, width * 0.1714, height * 0.15);
-            ctx.fillRect(x + width * 0.7571, y + height * 0.125, width * 0.1714, height * 0.15);
-            ctx.fillStyle = '#333333';
-            ctx.beginPath();
-            const wheelRadius = height * 0.15;
-            ctx.arc(x + width * 0.1714, y + height, wheelRadius, 0, Math.PI * 2);
-            ctx.arc(x + width * 0.8286, y + height, wheelRadius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'white';
-            ctx.font = `${height * 0.25}px Arial`;
-            const textWidth = ctx.measureText('RB').width;
-            ctx.fillText('RB', x + (width - textWidth) / 2, y + height * 0.625);
-        }
-    }
-
-    function drawMaxRedBull(x, y, width, height) {
-        if (redBullImageLoaded && redBullImage.complete) {
-            const spriteAspectRatio = redBullImage.width / redBullImage.height;
-            const scaledWidth = height * spriteAspectRatio;
-            ctx.drawImage(redBullImage, x, y, scaledWidth, height);
-        } else {
-            ctx.fillStyle = '#1e3a8a';
-            ctx.fillRect(x, y, width, height);
-            ctx.fillStyle = '#FFD700';
-            ctx.fillRect(x + width * 0.0714, y + height * 0.125, width * 0.1714, height * 0.15);
-            ctx.fillRect(x + width * 0.7571, y + height * 0.125, width * 0.1714, height * 0.15);
-            ctx.fillStyle = '#333333';
-            ctx.beginPath();
-            const wheelRadius = height * 0.15;
-            ctx.arc(x + width * 0.1714, y + height, wheelRadius, 0, Math.PI * 2);
-            ctx.arc(x + width * 0.8286, y + height, wheelRadius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#FFD700';
-            ctx.font = `${height * 0.25}px Arial`;
-            const textWidth = ctx.measureText('MV').width;
-            ctx.fillText('MV', x + (width - textWidth) / 2, y + height * 0.625);
-        }
-    }
 
     function showMainMenu() {
         gameState = 'menu';
@@ -965,13 +956,13 @@
         backgroundOffset = 0;
         grandstandTimer = 0;
         grandstandVisible = true;
-        grandstandX = displayWidth; 
-        grandstandSpeed = -displayWidth * 0.3; 
+        grandstandX = displayWidth;
+        grandstandSpeed = -displayWidth * 0.3;
         nextGrandstandInterval = 15000 + Math.random() * 5000;
 
         if (isMobilePortrait) {
-            obstacleSpawnRate = 2200; 
-            obstacleSpeed = 600; 
+            obstacleSpawnRate = 2200;
+            obstacleSpeed = 600;
         } else {
             obstacleSpawnRate = 1800;
             obstacleSpeed = 800;
@@ -989,7 +980,7 @@
 
         obstacles.length = 0;
         lastObstacleTime = 0;
-        obstacleClusterChance = isMobilePortrait ? 0.2 : 0.3; 
+        obstacleClusterChance = isMobilePortrait ? 0.2 : 0.3;
 
         document.getElementById('mainMenu').style.display = 'none';
         document.getElementById('gameOver').style.display = 'none';
@@ -998,7 +989,7 @@
         document.getElementById('instructions').style.display = 'none';
         document.getElementById('introText').style.display = 'block';
 
-        lastObstacleTime = gameTime + 1000; 
+        lastObstacleTime = gameTime + 1000;
         requestAnimationFrame(gameLoop);
     }
 
@@ -1014,9 +1005,9 @@
                 const treeSeed = Math.floor((i + backgroundOffset) / treeSpacing);
 
                 const rand = Math.abs(Math.sin(treeSeed * 87.42)) % 1;
-                const treeScale = 0.9 + rand * 1.4; 
+                const treeScale = 0.9 + rand * 1.4;
 
-                const baseTreeSize = Math.min(200, displayHeight * 3.5); 
+                const baseTreeSize = Math.min(200, displayHeight * 3.5);
                 const treeWidth = baseTreeSize * treeScale;
                 const treeHeight = baseTreeSize * treeScale;
                 const treeY = groundY - treeHeight;
@@ -1025,7 +1016,7 @@
             }
         }
     }
-    
+
     function drawBackground(deltaTime) {
         const gradient = ctx.createLinearGradient(0, 0, 0, displayHeight);
         gradient.addColorStop(0, '#87CEEB');
@@ -1130,7 +1121,7 @@
     function updateObstacles(deltaTime) {
         if (gameState !== 'playing') return;
 
-        const newDifficultyLevel = Math.floor(score / (isMobilePortrait ? 4 : 3)); 
+        const newDifficultyLevel = Math.floor(score / (isMobilePortrait ? 4 : 3));
 
         if (newDifficultyLevel > difficultyLevel) {
             difficultyLevel = newDifficultyLevel;
@@ -1170,7 +1161,7 @@
                 const shouldCluster = Math.random() < obstacleClusterChance;
 
                 if (shouldCluster && obstacles.length > 0) {
-                    const clusterSize = 2 + Math.floor(Math.random() * (isMobilePortrait ? 2 : 3)); 
+                    const clusterSize = 2 + Math.floor(Math.random() * (isMobilePortrait ? 2 : 3));
                     const clusterGap = Math.max(40, minObstacleGap * 0.4);
 
                     for (let i = 0; i < clusterSize; i++) {
@@ -1250,6 +1241,7 @@
         lastFrameTime = currentTime;
 
         deltaTimeAccumulator += deltaTime;
+        const animationBounce = Math.sin(currentTime / 100) * 2;
 
         while (deltaTimeAccumulator >= TARGET_FRAME_TIME) {
             gameTime += TARGET_FRAME_TIME;
@@ -1258,9 +1250,9 @@
             if (!grandstandVisible && grandstandTimer >= nextGrandstandInterval) {
                 grandstandVisible = true;
                 grandstandX = displayWidth;
-                grandstandSpeed = -displayWidth * 0.3; 
+                grandstandSpeed = -displayWidth * 0.3;
                 grandstandTimer = 0;
-                nextGrandstandInterval = 15000 + Math.random() * 5000; 
+                nextGrandstandInterval = 15000 + Math.random() * 5000;
             }
 
             if (grandstandVisible) {
@@ -1283,10 +1275,29 @@
         ctx.clearRect(0, 0, displayWidth, displayHeight);
 
         drawBackground(deltaTime);
-        drawMcLaren(player.x, player.y);
+
+        drawCar({
+            image: mclarenImage,
+            x: player.x,
+            y: player.y,
+            width: player.width,
+            height: player.height,
+            bounce: true,
+            label: 'MCL',
+            labelColor: 'white'
+        });
 
         if (gameState === 'intro' && maxCar.visible) {
-            drawMaxRedBull(maxCar.x, maxCar.y, maxCar.width, maxCar.height);
+            drawCar({
+                image: redBullImage,
+                x: maxCar.x,
+                y: maxCar.y,
+                width: maxCar.width,
+                height: maxCar.height,
+                bounce: true,
+                label: 'MV',
+                labelColor: 'gold'
+            });
         }
 
         if (gameState === 'playing') {
@@ -1298,7 +1309,16 @@
                     obstacle.x > displayWidth - perfectJumpZone &&
                     obstacle.x < displayWidth - perfectJumpZone + 50;
 
-                drawRedBull(obstacle.x, obstacle.y, obstacle.width, obstacle.height, showWarning, showPerfectZone);
+                drawCar({
+                    image: redBullImage,
+                    x: obstacle.x,
+                    y: obstacle.y,
+                    width: obstacle.width,
+                    height: obstacle.height,
+                    bounce: true,
+                    label: 'RB',
+                    labelColor: 'white'
+                });
             }
 
             for (let i = activeQuotes.length - 1; i >= 0; i--) {
@@ -1328,7 +1348,7 @@
 
         // Update UI
         document.getElementById('score').textContent = `Championship points: ${score}`;
-        const speedKmh = Math.round((obstacleSpeed / 1000) * 3.6 * 10); 
+        const speedKmh = Math.round((obstacleSpeed / 1000) * 3.6 * 10);
         document.getElementById('speedIndicator').textContent = `Speed: ${speedKmh} km/h`;
 
         requestAnimationFrame(gameLoop);
@@ -1393,19 +1413,19 @@
         if (e.target === canvas) {
             e.preventDefault();
         }
-    }, { passive: false });
+    }, {passive: false});
 
     document.addEventListener('touchend', (e) => {
         if (e.target === canvas) {
             e.preventDefault();
         }
-    }, { passive: false });
+    }, {passive: false});
 
     document.addEventListener('touchmove', (e) => {
         if (e.target === canvas) {
             e.preventDefault();
         }
-    }, { passive: false });
+    }, {passive: false});
 
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && !isInputDown) {
