@@ -15,25 +15,21 @@ export function showMainMenu() {
     const introText = document.getElementById('introText');
 
     // Hide other screens
-    howToPlay.style.display = 'none';
-    credits.style.display = 'none';
-    gameOver.style.display = 'none';
-    score.style.display = 'none';
-    speedIndicator.style.display = 'none';
-    instructions.style.display = 'none';
-    introText.style.display = 'none';
+    [howToPlay, credits, gameOver, score, speedIndicator, instructions, introText].forEach(el => el.style.display = 'none');
 
     // Build menu content
     mainMenu.innerHTML = `
-    <img id="landoImg" class="driver-image lando" style="display: none;">
-    <div class="menu-center">
-      <img src="./resources/Art/Title.png" alt="Gap The Bulls Title" class="menu-title-image">
-      <button class="menu-button" id="startBtn">Play</button>
-      <button class="menu-button" id="howToPlayBtn">How to Play</button>
-      <button class="menu-button" id="creditsBtn">Credits</button>
-    </div>
-    <img id="maxImg" class="driver-image max" style="display: none;">
-  `;
+        <div class="menu-title-container">
+            <img src="./resources/Sprites/Lando.png" id="landoImg" class="driver-image lando">
+            <img src="./resources/Art/Title.png" alt="Gap The Bulls Title" class="menu-title-image">
+            <img src="./resources/Sprites/Max.png"  id="maxImg" class="driver-image max">
+        </div>
+        <div class="menu-center">
+            <button class="menu-button" id="startBtn">Play</button>
+            <button class="menu-button" id="howToPlayBtn">How to Play</button>
+            <button class="menu-button" id="creditsBtn">Credits</button>
+        </div>
+    `;
 
     mainMenu.style.display = 'flex';
 
